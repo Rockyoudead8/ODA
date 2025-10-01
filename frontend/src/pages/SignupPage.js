@@ -1,11 +1,11 @@
 import React, { useState } from "react";
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 function SignupPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-
+ const navigate = useNavigate();
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -15,7 +15,7 @@ function SignupPage() {
     }
 
     // Send signup data to backend
-    const response = await fetch("http://localhost:5000/api/auth/signup", {
+    const response = await fetch("http://localhost:8000/api/auth/signup", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name, email, password }),
@@ -23,6 +23,10 @@ function SignupPage() {
 
     const data = await response.json();
     console.log(data);
+
+    if(response.ok){
+      navigate("/Check");
+    }
   };
 
   return (

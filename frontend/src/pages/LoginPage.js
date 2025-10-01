@@ -1,21 +1,36 @@
 import React, { useState } from "react";
-import { Link } from 'react-router-dom';
+import { Link,useNavigate } from 'react-router-dom';
 function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const navigate = useNavigate(); // for redirect
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError(""); // clear old errors
 
-    // Call backend API (Node/Express)
-    const response = await fetch("http://localhost:5000/api/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
+    try {
+      const response = await fetch("http://localhost:8000/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
 
-    const data = await response.json();
-    console.log(data); // Show response from backend
+      const data = await response.json();
+      console.log(data);
+
+      if (response.ok) {
+        
+        navigate("/Check");
+      } else {
+        
+        setError(data.error || "Invalid login credentials");
+      }
+    } catch (err) {
+      console.error("Login error:", err);
+      setError("Something went wrong. Please try again.");
+    }
   };
 
   return (

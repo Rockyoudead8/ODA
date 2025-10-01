@@ -19,7 +19,7 @@ function App() {
    <Route path='/Check' element={<Check/>}/>
    <Route path='/Admin' element={<Admin/>}/>
    <Route path='/Hero' element={<Hero/>}/>
-   <Route path='/Specific' element={<Specific/>}/>
+   <Route path='/Specific/:id' element={<Specific/>}/>
     </Routes>
     <Footer/>
     </BrowserRouter>
