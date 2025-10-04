@@ -1,3 +1,4 @@
+require('dotenv').config();
 var createError = require('http-errors');
 var express = require('express');
 var path = require('path');
@@ -5,7 +6,10 @@ var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 var session = require("express-session");
 var indexRouter = require('./routes/index');
+var infoRouter = require('./routes/GenerateInfo');
 var usersRouter = require('./routes/users');
+var commentsRoute = require('./routes/comments');
+const generateSoundRoute = require('./routes/generateSound');
 var listingsRouter = require('./routes/listings');
 var passport = require("passport");
 var localStrategy = require("passport-local");
@@ -19,7 +23,6 @@ app.use(cors({
 
 
 const mongoose = require('mongoose');
-require('dotenv').config();
 
 mongoose.connect(process.env.MONGODB_URL, {
   useNewUrlParser: true,
@@ -52,9 +55,10 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', indexRouter);
 app.use('/api/auth', usersRouter);
-app.use('/api',listingsRouter);
-
-
+app.use('/api', listingsRouter);
+app.use('/api/generate-sound', generateSoundRoute);
+app.use('/api/comments', commentsRoute);
+app.use('/api/generate_info', infoRouter);
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
   next(createError(404));

@@ -8,6 +8,9 @@ import Header from './components/Header'
 import Footer from './components/Footer'
 import LoginPage from './pages/LoginPage'
 import SignupPage from './pages/SignupPage'
+import Generate_sound from './pages/Generatesound'
+import 'leaflet/dist/leaflet.css';
+
 function App() {
   return (
     <>
@@ -20,6 +23,7 @@ function App() {
    <Route path='/Admin' element={<Admin/>}/>
    <Route path='/Hero' element={<Hero/>}/>
    <Route path='/Specific/:id' element={<Specific/>}/>
+   <Route path='/Generate_sound' element={<Generate_sound/>}/>
     </Routes>
     <Footer/>
     </BrowserRouter>

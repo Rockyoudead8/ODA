@@ -1,6 +1,4 @@
 const mongoose = require("mongoose");
-// Connect to MongoDB
-
 
 const listingSchema = new mongoose.Schema({
   title: {
@@ -8,17 +6,15 @@ const listingSchema = new mongoose.Schema({
     required: true,
     trim: true
   },
+  drills: {
+    type: String
+  },
   description: String,
-  thumbnail: String,
-//   createdBy: {
-//     type: mongoose.Schema.Types.ObjectId,
-//     ref: 'User',
-//     required: true
-//   },
-//   category: {
-//     type: mongoose.Schema.Types.ObjectId,
-//     ref: 'Category'
-//   },
+  // store multiple image URLs
+  images: {
+    type: [String], // array of strings
+    default: []     // optional, default empty array
+  },
   createdAt: {
     type: Date,
     default: Date.now
