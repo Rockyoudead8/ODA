@@ -84,7 +84,7 @@ function SignupPage() {
             <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input
               type="text"
-              placeholder="Full Name"
+              placeholder="    Full Name"
               value={name}
               onChange={(e) => setName(e.target.value)}
               
@@ -97,7 +97,7 @@ function SignupPage() {
             <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input
               type="email"
-              placeholder="Email"
+              placeholder="    Email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full p-3 sm:p-4 pl-12 border border-indigo-200 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-pink-400 transition"
@@ -110,7 +110,7 @@ function SignupPage() {
             <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input
               type="password"
-              placeholder="Password"
+              placeholder="    Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full p-3 sm:p-4 pl-12 border border-indigo-200 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-pink-400 transition"
@@ -123,7 +123,7 @@ function SignupPage() {
             <CheckCircle className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input
               type="password"
-              placeholder="Confirm Password"
+              placeholder="     Confirm Password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               className="w-full p-3 sm:p-4 pl-12 border border-indigo-200 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-pink-400 transition"
