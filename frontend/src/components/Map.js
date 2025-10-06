@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { GoogleMap, useJsApiLoader, Marker } from '@react-google-maps/api';
-import { BarChart3, MapPin } from "lucide-react";
+import { BarChart3 } from "lucide-react";
 
 
 const libraries = ["places"];
@@ -9,9 +9,8 @@ function Map() {
   const [topCities, setTopCities] = useState([]);
   const [loading, setLoading] = useState(true);
 
-
-  const GOOGLE_MAPS_API_KEY = "AIzaSyAIaDnegHiQN79bVUoTPW_sDW-iVipRF1M";
-
+  // NOTE: This API key is public and should be stored securely in an environment variable in a real application.
+  const GOOGLE_MAPS_API_KEY = "AIzaSyAIaDnegHiQN79bVUoTPW_sDW-iVipRF1M"; 
 
   const containerStyle = {
     width: '100%',
@@ -83,12 +82,13 @@ function Map() {
 
   return (
     <div 
-        className="relative w-full h-[400px] rounded-xl overflow-hidden bg-indigo-50 border-4 border-indigo-200 shadow-inner p-4 flex flex-col md:flex-row"
+     
+        className="relative w-full h-96 md:h-[500px] rounded-xl overflow-hidden bg-indigo-50 border-4 border-indigo-200 shadow-inner p-4 flex flex-col md:flex-row"
         style={{ zIndex: 0 }}
     >
         
-
-        <div className="flex-1 rounded-lg shadow-lg relative overflow-hidden">
+        
+        <div className="flex-1 rounded-lg shadow-lg relative overflow-hidden h-3/5 md:h-full">
           {!isLoaded ? (
             <div className="w-full h-full flex items-center justify-center bg-gray-200 text-gray-600 font-semibold">
                 Loading Map...
@@ -104,7 +104,6 @@ function Map() {
                 <Marker 
                   key={index} 
                   position={{ lat: city.lat, lng: city.lng }}
-                  
                   icon={{
                     path: 'M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z',
                     fillColor: '#ec4899', 
@@ -119,6 +118,7 @@ function Map() {
         </div>
 
         
+        
         <div className="md:w-1/3 w-full md:ml-4 mt-4 md:mt-0 bg-white p-4 rounded-lg shadow-xl border border-indigo-100 flex flex-col">
             <h3 className="text-lg font-bold text-pink-600 flex items-center border-b pb-2 mb-3">
                 <BarChart3 className="w-5 h-5 mr-2"/> Top Visited Cities
@@ -126,7 +126,7 @@ function Map() {
             {loading ? (
                 <p className="text-gray-500 italic">Loading city stats...</p>
             ) : topCities.length > 0 ? (
-                <ol className="space-y-2 list-none p-0">
+                <ol className="space-y-2 list-none p-0 overflow-y-auto">
                     {topCities.map((city, index) => (
                         <li key={index} className="flex justify-between items-center text-sm font-medium bg-indigo-50 p-2 rounded-md transition hover:bg-indigo-100">
                             <span className="flex items-center text-indigo-800">

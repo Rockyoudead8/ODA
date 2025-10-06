@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-
 import Map from "../components/Map"; 
 import Quiz_info from "../components/CityInfo";
 import SoundBox from "../components/SoundBox";
@@ -9,7 +8,6 @@ import Slider from "react-slick";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 import { Heart, MapPin, MessageCircle, Volume2, Globe, Clock, CheckCircle } from "lucide-react";
-
 
 function Specific() {
   const { id } = useParams();
@@ -20,17 +18,13 @@ function Specific() {
   const [comments, setComments] = useState([]);
   const [visited, setVisited] = useState(false);
   const [visitCount, setVisitCount] = useState(0);
-
   const [message, setMessage] = useState(""); 
-
 
   const displayMessage = (text, isError = false) => {
     setMessage({ text, isError });
     setTimeout(() => setMessage(""), 3000);
   };
 
-
-  // ye function h cities visited h ki nhi check krne ka , and update visited cities ke counter ko update krne ka
   const toggleCityVisit = async () => {
     const userId = localStorage.getItem("userId");
     if (!userId) {
@@ -51,14 +45,11 @@ function Specific() {
       setVisited(data.visited);
       setVisitCount(data.count);
       displayMessage(data.visited ? "City marked as visited!" : "Visit status removed.", false);
-
     } catch (err) {
       console.error(err);
       displayMessage("Error updating visit status.", true); 
     }
   };
-
-
 
   useEffect(() => {
     const fetchListing = async () => {
@@ -111,13 +102,11 @@ function Specific() {
       return;
     }
     
-  
     const userId = localStorage.getItem("userId");
     if (!userId) {
         displayMessage("You must be logged in to comment.", true);
         return;
     }
-
 
     try {
       const res = await fetch(`http://localhost:8000/api/comments`, {
@@ -126,75 +115,62 @@ function Specific() {
         body: JSON.stringify({
           listing: id,
           text: commentText,
-          // userId: userId 
         }),
       });
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to post comment");
 
-
       setComments([...comments, data]);
       setCommentText("");
       displayMessage("Comment submitted successfully!", false);
-
     } catch (err) {
       console.error(err);
       displayMessage("Failed to submit comment.", true);
     }
   };
 
-
   return (
-    <div className="bg-gradient-to-br from-indigo-50 to-purple-100 min-h-screen p-4 sm:p-6 lg:p-8 space-y-12">
-      
-
+    <div className="bg-gradient-to-br from-indigo-50 to-purple-100 min-h-screen p-4 sm:p-6 lg:p-8 space-y-10 sm:space-y-12">
       {message && message.text && (
-          <div className={`fixed top-20 right-5 z-50 px-6 py-3 rounded-lg shadow-xl text-white font-medium transition-opacity duration-300 ${message.isError ? "bg-red-500" : "bg-green-500"}`}>
-            {message.text}
-          </div>
-        )}
+        <div className={`fixed top-20 right-5 z-50 px-6 py-3 rounded-lg shadow-xl text-white font-medium transition-opacity duration-300 ${message.isError ? "bg-red-500" : "bg-green-500"}`}>
+          {message.text}
+        </div>
+      )}
 
-      
       <div className="max-w-7xl mx-auto bg-white rounded-2xl shadow-2xl overflow-hidden border border-indigo-200">
-        
-   
-        <div className="p-6 md:p-8 flex flex-col md:flex-row justify-between items-start md:items-center border-b border-gray-100">
+        <div className="p-4 md:p-8 flex flex-col md:flex-row justify-between items-start md:items-center border-b border-gray-100">
           <div>
-            <h1 className="text-4xl font-extrabold text-gray-900 leading-tight">{listing.title}</h1>
-            <p className="text-lg text-pink-600 font-semibold flex items-center mt-1">
-                <MapPin className="w-5 h-5 mr-2" /> 
-                {listing.location || "Unknown Location"}
+            <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900 leading-tight">{listing.title}</h1>
+            <p className="text-base sm:text-lg text-pink-600 font-semibold flex items-center mt-1">
+              <MapPin className="w-4 h-4 sm:w-5 sm:h-5 mr-2" /> 
+              {listing.location || "Unknown Location"}
             </p>
           </div>
-          
-          
           <div className="mt-4 md:mt-0 flex items-center space-x-4">
             <div className="text-center">
-              <p className="text-3xl font-bold text-indigo-600">{visitCount}</p>
+              <p className="text-2xl sm:text-3xl font-bold text-indigo-600">{visitCount}</p>
               <p className="text-xs font-medium text-gray-500">Total Visits</p>
             </div>
-            
             <button
               onClick={toggleCityVisit}
-              className={`px-6 py-3 text-sm font-bold rounded-full transition duration-300 transform hover:scale-[1.05] active:scale-[0.98] shadow-lg ${visited ? "bg-pink-500 text-white shadow-pink-300/60" : "bg-indigo-600 text-white shadow-indigo-300/60 hover:bg-indigo-700"
+              className={`px-4 py-2 sm:px-6 sm:py-3 text-xs sm:text-sm font-bold rounded-full transition duration-300 transform hover:scale-[1.05] active:scale-[0.98] shadow-lg ${visited ? "bg-pink-500 text-white shadow-pink-300/60" : "bg-indigo-600 text-white shadow-indigo-300/60 hover:bg-indigo-700"
                 }`}
             >
               {visited ? (
-                <span className="flex items-center"><CheckCircle className="w-5 h-5 mr-2" /> Visited!</span>
+                <span className="flex items-center"><CheckCircle className="w-4 h-4 mr-2" /> Visited!</span>
               ) : (
-                <span className="flex items-center"><Heart className="w-5 h-5 mr-2" /> Mark as Visited</span>
+                <span className="flex items-center"><Heart className="w-4 h-4 mr-2" /> Mark as Visited</span>
               )}
             </button>
           </div>
         </div>
 
-
-        <div className="w-full h-[50vh] sm:h-[60vh] lg:h-[70vh]">
+        <div className="w-full h-[40vh] sm:h-[50vh] lg:h-[60vh]">
           {listing.images && listing.images.length > 0 ? (
             <Slider {...sliderSettings}>
               {listing.images.map((img, idx) => (
-                <div key={idx} className="h-[50vh] sm:h-[60vh] lg:h-[70vh]">
+                <div key={idx} className="h-[40vh] sm:h-[50vh] lg:h-[60vh]">
                   <img
                     src={img}
                     alt={`${listing.title}-${idx}`}
@@ -213,40 +189,31 @@ function Specific() {
           )}
         </div>
       </div>
-      
 
       <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
-    
         <div className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-xl border border-indigo-100">
           <div className="flex items-center mb-4 text-indigo-600">
             <Clock className="w-6 h-6 mr-2" />
             <h2 className="text-2xl font-bold">History & Lore</h2>
           </div>
           <p className="text-gray-600 mb-4">{listing.description}</p>
-         
-          <div className="h-[40vh] border border-dashed border-pink-300 flex items-center justify-center text-gray-500 bg-pink-50 rounded-lg">
-             {/* <Quiz_info city={listing.title}/>  */}
-          </div>
+          <div className="h-[30vh] sm:h-[40vh] border border-dashed border-pink-300 flex items-center justify-center text-gray-500 bg-pink-50 rounded-lg"></div>
         </div>
 
-  
         <div className="bg-white p-6 rounded-2xl shadow-xl border border-indigo-100">
           <div className="flex items-center mb-4 text-pink-600">
             <Volume2 className="w-6 h-6 mr-2" />
             <h2 className="text-2xl font-bold">Immersive Sound</h2>
           </div>
           <p className="text-gray-500 mb-4">Listen to the sounds of {listing.title}.</p>
-          <div className="h-[40vh] flex items-center justify-center bg-indigo-50 rounded-lg border border-dashed border-indigo-300">
+          <div className="h-[30vh] sm:h-[40vh] flex items-center justify-center bg-indigo-50 rounded-lg border border-dashed border-indigo-300">
             <SoundBox />
           </div>
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8">
-        
-    
-        <div className="bg-white p-6 rounded-2xl shadow-xl border border-indigo-100 h-[70vh]">
+        <div className="bg-white p-6 rounded-2xl shadow-xl border border-indigo-100 h-[60vh] lg:h-[75vh]">
           <div className="flex items-center mb-4 text-indigo-600">
             <Globe className="w-6 h-6 mr-2" />
             <h2 className="text-2xl font-bold">Virtual Exploration</h2>
@@ -256,58 +223,53 @@ function Specific() {
           </div>
         </div>
 
- 
         <div className="space-y-6">
-           
-            <div className="bg-white p-6 rounded-2xl shadow-xl border border-indigo-100 h-[30vh]">
-                <h3 className="text-xl font-bold text-gray-800 mb-4">City Location</h3>
-                <div className="h-[calc(100%-40px)] rounded-lg overflow-hidden border border-gray-200">
-                    <Map />
+          <div className="bg-white p-6 rounded-2xl shadow-xl border border-indigo-100 h-[35vh]">
+            <h3 className="text-xl font-bold text-gray-800 mb-4">City Location</h3>
+            <div className="h-[calc(100%-40px)] rounded-lg overflow-hidden border border-gray-200">
+              <Map />
+            </div>
+          </div>
+
+          <div className="bg-white p-6 rounded-2xl shadow-xl border border-indigo-100">
+            <h3 className="text-xl font-bold text-gray-800 flex items-center mb-4">
+              <MessageCircle className="w-5 h-5 mr-2 text-pink-500"/>
+              Community Chatter
+            </h3>
+
+            <div className="mb-6">
+              <h4 className="font-semibold text-gray-700 mb-2">Share Your Thoughts</h4>
+              <textarea
+                className="w-full p-3 border border-indigo-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-pink-400 transition"
+                rows={3}
+                placeholder="What did you love about this city?"
+                value={commentText}
+                onChange={(e) => setCommentText(e.target.value)}
+              />
+              <button
+                className="mt-3 px-6 py-2 bg-indigo-500 text-white font-semibold rounded-lg hover:bg-indigo-600 transition shadow-md shadow-indigo-300"
+                onClick={handleCommentSubmit}
+              >
+                Submit Comment
+              </button>
+            </div>
+
+            <div>
+              <h4 className="font-semibold text-gray-700 mb-3 border-t pt-3">Recent Comments ({comments.length})</h4>
+              {comments.length === 0 ? (
+                <p className="text-gray-500 italic">Be the first to leave a comment!</p>
+              ) : (
+                <div className="max-h-60 overflow-y-auto space-y-3">
+                  {comments.map((c, idx) => (
+                    <div key={idx} className="p-3 bg-gray-50 rounded-lg border border-gray-100">
+                      <p className="text-gray-800">{c.text}</p>
+                      <p className="text-xs text-gray-400 mt-1">— Anonymous User (Placeholder)</p>
+                    </div>
+                  ))}
                 </div>
+              )}
             </div>
-
-           
-            <div className="bg-white p-6 rounded-2xl shadow-xl border border-indigo-100">
-              <h3 className="text-xl font-bold text-gray-800 flex items-center mb-4">
-                <MessageCircle className="w-5 h-5 mr-2 text-pink-500"/>
-                Community Chatter
-              </h3>
-
- 
-              <div className="mb-6">
-                <h4 className="font-semibold text-gray-700 mb-2">Share Your Thoughts</h4>
-                <textarea
-                  className="w-full p-3 border border-indigo-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-pink-400 transition"
-                  rows={3}
-                  placeholder="What did you love about this city?"
-                  value={commentText}
-                  onChange={(e) => setCommentText(e.target.value)}
-                />
-                <button
-                  className="mt-3 px-6 py-2 bg-indigo-500 text-white font-semibold rounded-lg hover:bg-indigo-600 transition shadow-md shadow-indigo-300"
-                  onClick={handleCommentSubmit}
-                >
-                  Submit Comment
-                </button>
-              </div>
-
-
-              <div>
-                <h4 className="font-semibold text-gray-700 mb-3 border-t pt-3">Recent Comments ({comments.length})</h4>
-                {comments.length === 0 ? (
-                  <p className="text-gray-500 italic">Be the first to leave a comment!</p>
-                ) : (
-                  <div className="max-h-60 overflow-y-auto space-y-3">
-                    {comments.map((c, idx) => (
-                      <div key={idx} className="p-3 bg-gray-50 rounded-lg border border-gray-100">
-                        <p className="text-gray-800">{c.text}</p>
-                        <p className="text-xs text-gray-400 mt-1">— Anonymous User (Placeholder)</p>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
+          </div>
         </div>
       </div>
     </div>
