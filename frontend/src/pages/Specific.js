@@ -197,7 +197,9 @@ function Specific() {
             <h2 className="text-2xl font-bold">History & Lore</h2>
           </div>
           <p className="text-gray-600 mb-4">{listing.description}</p>
-          <div className="h-[30vh] sm:h-[40vh] border border-dashed border-pink-300 flex items-center justify-center text-gray-500 bg-pink-50 rounded-lg"></div>
+          <div className="h-[50vh] sm:h-[60vh] border border-dashed border-pink-300 flex items-center justify-center text-gray-500 bg-pink-50 rounded-lg">
+            <Quiz_info city={listing.title}/>
+          </div>
         </div>
 
         <div className="bg-white p-6 rounded-2xl shadow-xl border border-indigo-100">
@@ -206,8 +208,8 @@ function Specific() {
             <h2 className="text-2xl font-bold">Immersive Sound</h2>
           </div>
           <p className="text-gray-500 mb-4">Listen to the sounds of {listing.title}.</p>
-          <div className="h-[30vh] sm:h-[40vh] flex items-center justify-center bg-indigo-50 rounded-lg border border-dashed border-indigo-300">
-            <SoundBox />
+          <div className="h-[50vh] sm:h-[60vh] flex items-center justify-center bg-indigo-50 rounded-lg border border-dashed border-indigo-300">
+            <SoundBox cityKey ={listing.title} />
           </div>
         </div>
       </div>
@@ -224,7 +226,7 @@ function Specific() {
         </div>
 
         <div className="space-y-6">
-          <div className="bg-white p-6 rounded-2xl shadow-xl border border-indigo-100 h-[35vh]">
+          <div className="bg-white p-6 rounded-2xl shadow-xl border border-indigo-100 h-[62.1vh]">
             <h3 className="text-xl font-bold text-gray-800 mb-4">City Location</h3>
             <div className="h-[calc(100%-40px)] rounded-lg overflow-hidden border border-gray-200">
               <Map />

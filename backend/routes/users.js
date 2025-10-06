@@ -6,7 +6,7 @@ const category = require("../models/category");
 const comment = require("../models/comment");
 const listings = require("../models/listings");
 const quiz = require("../models/quiz");
-const quizResult = require("../models/quizResult");
+const quizResult = require("../models/QuizResult");
 
 
 router.post("/get_user", async (req, res) => {
