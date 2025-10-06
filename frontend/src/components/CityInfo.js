@@ -1,94 +1,65 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 
 function CityInfo({ city }) {
-  const [info, setInfo] = useState({
-    history: "",
-    facts: [],
-    famousStory: "",
-    quizQuestions: [],
-  });
+  const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
 
-  const fetchInfo = async () => {
-    setLoading(true);
-    setError(null);
+  useEffect(() => {
+    if (!city) return; // Wait until city is provided
 
-    try {
-      const res = await fetch("http://localhost:8000/api/generate_info", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ city }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || "Failed to fetch city info");
+    const fetchCityData = async () => {
+      setLoading(true);
+      try {
+        const res = await fetch("http://localhost:8000/api/generate_info", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ city }),
+        });
+        const result = await res.json();
+        setData(result);
+      } catch (err) {
+        console.error(err);
+        alert("Failed to load city data");
+      } finally {
+        setLoading(false);
       }
+    };
 
-      // Ensure defaults if API returns incomplete data
-      setInfo({
-        history: data.history || "",
-        facts: Array.isArray(data.facts) ? data.facts : [],
-        famousStory: data.famousStory || "",
-        quizQuestions: Array.isArray(data.quizQuestions) ? data.quizQuestions : [],
-      });
-    } catch (err) {
-      console.error(err);
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+    fetchCityData();
+  }, [city]);
 
   return (
     <div className="p-4">
-      <button
-        onClick={fetchInfo}
-        className="bg-blue-500 text-white px-4 py-2 rounded"
-        disabled={loading}
-      >
-        {loading ? "Generating..." : "Generate Info"}
-      </button>
+      <h2 className="text-2xl font-semibold mb-2">Explore City</h2>
+      <p className="mb-3"><strong>City:</strong> {city || "Loading..."}</p>
 
-      {error && <p className="text-red-500 mt-2">{error}</p>}
+      {loading && <p>Loading city info...</p>}
 
-      {info && (
-        <div className="mt-4 space-y-6">
-          <div>
-            <h2 className="text-xl font-bold">History</h2>
-            <p>{info.history}</p>
-          </div>
+      {data && (
+        <div className="mt-4 space-y-3">
+          <h3 className="text-xl font-bold">History:</h3>
+          <p>{data.history}</p>
 
-          <div>
-            <h2 className="text-xl font-bold">Facts</h2>
-            <ul className="list-disc ml-5">
-              {info.facts.map((f, i) => (
-                <li key={i}>{f}</li>
+          <h3 className="text-xl font-bold">Facts:</h3>
+          <ul className="list-disc ml-5">
+            {data.facts.map((f, i) => <li key={i}>{f}</li>)}
+          </ul>
+
+          <h3 className="text-xl font-bold">Famous Story:</h3>
+          <p>{data.famousStory}</p>
+
+          <h3 className="text-xl font-bold">Quiz:</h3>
+          {data.quizQuestions.map((q, i) => (
+            <div key={i} className="border p-2 rounded">
+              <p><strong>{i + 1}. {q.question}</strong></p>
+              {q.options.map((opt, j) => (
+                <div key={j}>
+                  <input type="radio" id={`${i}-${j}`} name={`q-${i}`} value={opt} />
+                  <label htmlFor={`${i}-${j}`}> {opt}</label>
+                </div>
               ))}
-            </ul>
-          </div>
-
-          <div>
-            <h2 className="text-xl font-bold">Famous Story</h2>
-            <p>{info.famousStory}</p>
-          </div>
-
-          <div>
-            <h2 className="text-xl font-bold">Quiz Questions</h2>
-            {info.quizQuestions.map((q, i) => (
-              <div key={i} className="mb-3">
-                <p className="font-semibold">{q.question}</p>
-                <ul className="list-disc ml-5">
-                  {q.options?.map((opt, j) => (
-                    <li key={j}>{opt}</li>
-                  ))}
-                </ul>
-                <p className="text-sm text-green-600">Answer: {q.answer}</p>
-              </div>
-            ))}
-          </div>
+            </div>
+          ))}
         </div>
       )}
     </div>

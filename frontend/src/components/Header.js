@@ -1,31 +1,52 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Search, User, LogIn, UserPlus } from "lucide-react";
+import { Search, User, LogIn, UserPlus, MapPin } from "lucide-react";
 
 function Header() {
 
   return (
-    <header className="bg-yellow-100 top-0 left-0 w-full h-20 flex items-center px-6 shadow-md">
+    <header className="sticky top-0 z-50 w-full flex items-center justify-between px-8 py-4 shadow-xl bg-white/95 backdrop-blur-sm border-b border-indigo-100">
    
-      <div className="flex-shrink-0 text-2xl font-bold text-gray-800">
-        <Link to="/Hero">YourLogo</Link>
+    
+      <div className="flex-shrink-0 text-3xl font-extrabold text-indigo-700 tracking-wider">
+        <Link to="/Hero" className="flex items-center gap-2 transition duration-200 hover:text-pink-600">
+          <MapPin className="w-6 h-6 text-pink-500" />
+          <span className="font-sans">VirtualWalk</span>
+        </Link>
       </div>
 
 
-      <div className="flex-grow"></div>
-
-
-      <nav className="flex items-center gap-6 text-gray-700 font-medium">
-        <Link to="/" className="flex items-center gap-1 hover:text-black">
-          <LogIn size={18} /> Login
+ 
+      <nav className="flex items-center gap-8 text-gray-700 font-semibold">
+        
+  
+        <Link 
+          to="/Explore" 
+          className="flex items-center gap-2 p-2 rounded-lg transition duration-200 hover:text-indigo-600 hover:bg-indigo-50"
+        >
+          <Search size={20} /> Explore
         </Link>
 
-        <Link to="/signup" className="flex items-center gap-1 hover:text-black">
-          <UserPlus size={18} /> Signup
+        {/* Auth Links */}
+        <Link 
+          to="/" 
+          className="flex items-center gap-2 p-2 rounded-lg transition duration-200 hover:text-indigo-600 hover:bg-indigo-50"
+        >
+          <LogIn size={20} /> Login
         </Link>
 
-        <Link to="/Admin" className="flex items-center gap-1 hover:text-black">
-          <User size={18} /> Profile
+        <Link 
+          to="/signup" 
+          className="flex items-center gap-2 px-4 py-2 border-2 border-pink-400 rounded-xl text-pink-600 font-bold transition duration-200 hover:bg-pink-50 hover:shadow-md"
+        >
+          <UserPlus size={20} /> Sign Up
+        </Link>
+
+        <Link 
+          to="/Admin" 
+          className="flex items-center gap-2 p-2 rounded-lg transition duration-200 hover:text-indigo-600 hover:bg-indigo-50"
+        >
+          <User size={20} /> Profile
         </Link>
       </nav>
     </header>

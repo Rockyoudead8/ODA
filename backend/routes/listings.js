@@ -17,59 +17,70 @@ router.post('/insert-dummy', async (req, res) => {
             {
                 "title": "New York",
                 "description": "The city that never sleeps. Explore skyscrapers, culture, and iconic landmarks.",
+                "lat": 40.7128,
+                "lng": -74.0060,
                 "images": [
-                    "https://images.unsplash.com/photo-1551739450-1c18c3f40f48?auto=format&fit=crop&w=800&q=80",
-                    "https://images.unsplash.com/photo-1494976388531-d1058494cdd8?auto=format&fit=crop&w=800&q=80",
-                    "https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=800&q=80"
+                    "https://plus.unsplash.com/premium_photo-1661954654458-c673671d4a08?q=80&w=2340&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+                    "https://images.unsplash.com/photo-1602940659805-770d1b3b9911?q=80&w=3432&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+                    "https://images.unsplash.com/photo-1587161584760-f51779fb276a?q=80&w=2340&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
                 ]
             },
             {
                 "title": "Paris",
                 "description": "The romantic city of lights, known for the Eiffel Tower and exquisite cuisine.",
+                "lat": 48.8566,
+                "lng": 2.3522,
                 "images": [
-                    "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&w=800&q=80",
-                    "https://images.unsplash.com/photo-1522098543979-ffc7f79fba6f?auto=format&fit=crop&w=800&q=80",
-                    "https://images.unsplash.com/photo-1543349687-6ed0a10bbf5a?auto=format&fit=crop&w=800&q=80"
+                    "https://plus.unsplash.com/premium_photo-1661919210043-fd847a58522d?q=80&w=2342&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+                    "https://plus.unsplash.com/premium_photo-1718035557075-5111d9d906d2?q=80&w=2342&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+                    "https://images.unsplash.com/photo-1499856871958-5b9627545d1a?q=80&w=2240&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
                 ]
             },
             {
                 "title": "Tokyo",
                 "description": "A vibrant city blending modern technology and traditional culture.",
+                "lat": 35.6762,
+                "lng": 139.6503,
                 "images": [
-                    "https://images.unsplash.com/photo-1549692520-acc6669e2f0c?auto=format&fit=crop&w=800&q=80",
-                    "https://images.unsplash.com/photo-1526481280691-3bfa7568ef23?auto=format&fit=crop&w=800&q=80",
-                    "https://images.unsplash.com/photo-1549693578-d683be217e58?auto=format&fit=crop&w=800&q=80"
+                    "https://plus.unsplash.com/premium_photo-1661914240950-b0124f20a5c1?q=80&w=2340&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+                    "https://images.unsplash.com/photo-1604928141064-207cea6f571f?q=80&w=2728&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+                    "https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?q=80&w=2394&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
                 ]
             },
             {
                 "title": "London",
                 "description": "Historic landmarks, museums, and the famous River Thames await you.",
+                "lat": 51.5074,
+                "lng": -0.1278,
                 "images": [
-                    "https://images.unsplash.com/photo-1505761671935-60b3a7427bad?auto=format&fit=crop&w=800&q=80",
-                    "https://images.unsplash.com/photo-1522098543979-ffc7f79fba6f?auto=format&fit=crop&w=800&q=80",
-                    "https://images.unsplash.com/photo-1503602642458-232111445657?auto=format&fit=crop&w=800&q=80"
+                    "https://plus.unsplash.com/premium_photo-1682056762907-23d08f913805?q=80&w=2148&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+                    "https://images.unsplash.com/photo-1634825174045-f9323ebed36b?q=80&w=2340&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+                    "https://images.unsplash.com/photo-1589657068463-ef4077ce0d10?q=80&w=2148&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
                 ]
             },
             {
                 "title": "Sydney",
                 "description": "Home to the iconic Opera House and beautiful beaches along the harbor.",
+                "lat": -33.8688,
+                "lng": 151.2093,
                 "images": [
-                    "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80",
-                    "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=800&q=80",
-                    "https://images.unsplash.com/photo-1508459712155-9f5a6c83d077?auto=format&fit=crop&w=800&q=80"
+                    "https://plus.unsplash.com/premium_photo-1697730198238-48ee2f2fe1b7?q=80&w=2832&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+                    "https://images.unsplash.com/photo-1598948485421-33a1655d3c18?q=80&w=2148&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+                    "https://images.unsplash.com/photo-1528072164453-f4e8ef0d475a?q=80&w=2342&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
                 ]
             },
             {
                 "title": "Dubai",
                 "description": "Futuristic skyscrapers, desert adventures, and luxury experiences in the UAE.",
+                "lat": 25.276987,
+                "lng": 55.296249,
                 "images": [
-                    "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&w=800&q=80",
-                    "https://images.unsplash.com/photo-1505266414180-0f25265ee2d7?auto=format&fit=crop&w=800&q=80",
-                    "https://images.unsplash.com/photo-1526481280691-3bfa7568ef23?auto=format&fit=crop&w=800&q=80"
+                    "https://plus.unsplash.com/premium_photo-1697729914552-368899dc4757?q=80&w=2224&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+                    "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?q=80&w=2340&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+                    "https://plus.unsplash.com/premium_photo-1661964298224-7747aa0ac10c?q=80&w=2340&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
                 ]
             }
         ]
-
 
 
         await listings.insertMany(dummyListings);
@@ -80,7 +91,7 @@ router.post('/insert-dummy', async (req, res) => {
     }
 });
 
-// listings insert krni h
+// listings fetch all
 router.get("/listing", async (req, res) => {
     try {
         const allListings = await listings.find();
@@ -90,6 +101,7 @@ router.get("/listing", async (req, res) => {
     }
 });
 
+// listings fetch by ID
 router.get("/listing/:id", async (req, res) => {
     try {
         const listingfound = await listings.findById(req.params.id);
@@ -99,7 +111,6 @@ router.get("/listing/:id", async (req, res) => {
         res.status(500).json({ error: "Failed to fetch listing" });
     }
 });
-
 
 
 module.exports = router;

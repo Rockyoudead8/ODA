@@ -59,6 +59,7 @@ app.use('/api', listingsRouter);
 app.use('/api/generate-sound', generateSoundRoute);
 app.use('/api/comments', commentsRoute);
 app.use('/api/generate_info', infoRouter);
+app.use('/api/toggle-visit',usersRouter);
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
   next(createError(404));

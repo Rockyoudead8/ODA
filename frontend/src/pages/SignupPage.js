@@ -1,94 +1,150 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from 'react-router-dom';
+import { User, Lock, MapPin, Mail, CheckCircle } from "lucide-react";
+
 function SignupPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
- const navigate = useNavigate();
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const navigate = useNavigate();
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError("");
+    setSuccess("");
 
     if (password !== confirmPassword) {
-      alert("Passwords do not match!");
+      setError("Passwords do not match!");
       return;
     }
 
-    // Send signup data to backend
-    const response = await fetch("http://localhost:8000/api/auth/signup", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email, password }),
-    });
+    try {
+      // Send signup data to backend
+      const response = await fetch("http://localhost:8000/api/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, password }),
+      });
 
-    const data = await response.json();
-    console.log(data);
+      const data = await response.json();
+      console.log(data);
 
-    if(response.ok){
-      navigate("/Check");
+      if (response.ok) {
+        setSuccess("Account created successfully! Redirecting...");
+        localStorage.setItem("userId", data.user._id);
+        
+        // Use a slight delay before navigating to let the success message show
+        setTimeout(() => {
+          navigate("/Check");
+        }, 1000);
+
+      } else {
+        setError(data.error || "Failed to create account.");
+      }
+    } catch (err) {
+      console.error("Signup error:", err);
+      setError("Something went wrong. Please check your connection.");
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="bg-white shadow-lg rounded-lg p-8 w-full max-w-md">
-        <h2 className="text-2xl font-bold text-center mb-6">Sign Up</h2>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 to-purple-100 p-4">
+      <div className="bg-white shadow-2xl rounded-xl p-8 sm:p-10 w-full max-w-md border-t-8 border-pink-500 transform transition duration-500 hover:shadow-pink-300/50">
+        
+        <div className="flex flex-col items-center mb-6">
+          <MapPin className="w-10 h-10 text-pink-500 mb-2" />
+          <h2 className="text-3xl font-extrabold text-gray-800 tracking-tight">
+            Create Your Account
+          </h2>
+          <p className="text-gray-500 mt-1">Join the virtual walk community!</p>
+        </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Name */}
-          <input
-            type="text"
-            placeholder="Full Name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="w-full p-3 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
-            required
-          />
+        {/* Display Error Message */}
+        {error && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative mb-4 text-sm">
+            {error}
+          </div>
+        )}
 
-          {/* Email/Username */}
-          <input
-            type="text"
-            placeholder="Email or Username"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full p-3 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
-            required
-          />
+        {/* Display Success Message */}
+        {success && (
+          <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg relative mb-4 text-sm flex items-center">
+            <CheckCircle className="w-5 h-5 mr-2" />
+            {success}
+          </div>
+        )}
 
-          {/* Password */}
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full p-3 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
-            required
-          />
+        <form onSubmit={handleSubmit} className="space-y-6">
+          
+          {/* Name Input */}
+          <div className="relative">
+            <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Full Name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="w-full p-4 pl-12 border border-indigo-200 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-pink-400 transition"
+              required
+            />
+          </div>
 
-          {/* Confirm Password */}
-          <input
-            type="password"
-            placeholder="Confirm Password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            className="w-full p-3 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
-            required
-          />
+          {/* Email Input */}
+          <div className="relative">
+            <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <input
+              type="email"
+              placeholder="Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full p-4 pl-12 border border-indigo-200 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-pink-400 transition"
+              required
+            />
+          </div>
+
+          {/* Password Input */}
+          <div className="relative">
+            <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <input
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full p-4 pl-12 border border-indigo-200 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-pink-400 transition"
+              required
+            />
+          </div>
+
+          {/* Confirm Password Input */}
+          <div className="relative">
+            <CheckCircle className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <input
+              type="password"
+              placeholder="Confirm Password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              className="w-full p-4 pl-12 border border-indigo-200 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-pink-400 transition"
+              required
+            />
+          </div>
 
           {/* Sign Up Button */}
           <button
             type="submit"
-            className="w-full bg-green-500 text-white p-3 rounded hover:bg-green-600 transition"
+            className="w-full bg-pink-500 text-white font-bold p-4 rounded-lg hover:bg-pink-600 transition duration-300 shadow-md shadow-pink-300 hover:shadow-lg"
           >
             Sign Up
           </button>
         </form>
 
         {/* Login Link */}
-        <p className="text-center text-sm mt-4">
+        <p className="text-center text-sm mt-6 text-gray-600">
           Already have an account?{" "}
-          <Link to="/" className="text-blue-500 hover:underline">
-            Login
+          <Link to="/" className="font-semibold text-indigo-500 hover:text-indigo-600 hover:underline transition">
+            Login here
           </Link>
         </p>
       </div>

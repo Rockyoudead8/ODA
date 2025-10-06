@@ -1,19 +1,29 @@
 const express = require("express");
 const router = express.Router();
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 
-const HF_API_KEY = process.env.HF_API_KEY;
 
-router.post("/", async (req, res) => {
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
+const model = genAI.getGenerativeModel({ 
+    model: "gemini-2.5-flash",
+    config: {
+        responseMimeType: "application/json", 
+        temperature: 0.7,
+        maxOutputTokens: 1000
+    }
+});
+router.post("/", async (req, res) => { 
   try {
     const { city } = req.body;
     if (!city) return res.status(400).json({ error: "City is required" });
 
     const prompt = `
-      You are a knowledgeable guide. 
-      Provide detailed information about the city "${city}" in the following JSON format:
+      You are a historian and quiz creator.
+      Generate detailed JSON data for the city "${city}" in this format:
       {
         "history": "Short history of the city",
-        "facts": ["fact1", "fact2", "fact3"],
+        "facts": ["fact1", "fact2", "fact3", "fact4"],
         "famousStory": "A famous legend or story about the city",
         "quizQuestions": [
           {"question": "Q1?", "options": ["A","B","C","D"], "answer": "B"},
@@ -23,47 +33,52 @@ router.post("/", async (req, res) => {
           {"question": "Q5?", "options": ["A","B","C","D"], "answer": "B"}
         ]
       }
-      Only return valid JSON. No extra text.
+      Only return valid JSON with no extra explanation. The 'responseMimeType' is set to 'application/json', so do not include any markdown fences.
     `;
 
-    const response = await fetch(
-      "https://api-inference.huggingface.co/models/tiiuae/falcon-7b-instruct",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${HF_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ inputs: prompt }),
-      }
-    );
-
-    const result = await response.json();
-    const textOutput = result?.generated_text || result?.[0]?.generated_text;
-
-    if (!textOutput) {
-      return res.status(500).json({ error: "No output from model" });
-    }
-
-    // Try to extract JSON only
-    const jsonMatch = textOutput.match(/\{[\s\S]*\}/); // matches first {...} block
-    if (!jsonMatch) {
-      return res.status(500).json({ error: "Could not find JSON in model output" });
-    }
-
-    let data;
+    let result;
     try {
-      data = JSON.parse(jsonMatch[0]);
-    } catch (err) {
-      console.error("JSON parse error:", err, textOutput);
-      return res.status(500).json({ error: "Invalid JSON after extraction" });
+        result = await model.generateContent(prompt);
+    } catch (apiError) {
+        console.error("Gemini API call failed:", apiError.message); 
+        return res.status(503).json({ 
+            error: "Gemini API call failed. Check key, network, or rate limits." 
+        });
     }
 
-    res.json(data);
+    const textOutput = result?.text;
+    
+    if (!textOutput) {
+      console.error("Gemini output was empty or malformed. Full result:", JSON.stringify(result, null, 2));
+      return res.status(500).json({ 
+        error: "No text output from Gemini." 
+      });
+    }
+
+    let jsonString = textOutput.trim();
+    
+    if (jsonString.startsWith('```')) {
+      jsonString = jsonString.replace(/^```json\s*|```\s*$/g, '').trim();
+    }
+    
+    if (jsonString.length === 0) {
+         return res.status(500).json({ error: "Gemini returned empty content after cleanup." });
+    }
+
+    let parsed;
+    try {
+      parsed = JSON.parse(jsonString);
+    } catch (err) {
+      console.error("JSON parse error:", err);
+      console.error("Problematic Model Output (non-JSON):", jsonString); 
+      return res.status(500).json({ error: "Invalid JSON returned by Gemini." });
+    }
+
+    res.json(parsed);
 
   } catch (err) {
-    console.error("Error generating info:", err);
-    res.status(500).json({ error: "Failed to generate info" });
+    console.error("Internal Error during request processing:", err);
+    res.status(500).json({ error: "Internal Server Error during content generation." });
   }
 });
 
