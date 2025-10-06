@@ -57,11 +57,11 @@ function Map() {
           }))
           .filter(city => city.visits > 0 && city.lat && city.lng); 
 
-        const top5 = citiesWithCoords
+        const top3 = citiesWithCoords
           .sort((a, b) => b.visits - a.visits)
-          .slice(0, 5);
+          .slice(0, 3); 
 
-        setTopCities(top5);
+        setTopCities(top3);
       } catch (error) {
         console.error("Error fetching cities:", error);
       } finally {
@@ -97,7 +97,7 @@ function Map() {
             <GoogleMap
               mapContainerStyle={containerStyle}
               center={center}
-              zoom={2}
+              zoom={3}
               options={mapOptions}
             >
               {topCities.map((city, index) => (

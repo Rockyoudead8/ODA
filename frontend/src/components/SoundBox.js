@@ -26,7 +26,7 @@ const citySoundData = {
     name: 'Sydney',
     vendors: [
       { name: 'Male Vendor (Aussie)', file: '/voices/voice_preview_sydney male.mp3' },
-      { name: 'Female Vendor (Aussie)', file: '/voices/voice_preview_sydeny female.mp3' },
+      { name: 'Female Vendor (Aussie)', file: '/voices/voice_preview_sydney female.mp3' },
     ],
     ambience: [
       { name: 'SCG Stadium', file: '/voices/sydney.wav' },

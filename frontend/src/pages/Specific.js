@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import Map from "../components/Map"; 
+import Map from "../components/Map";
 import Quiz_info from "../components/CityInfo";
 import SoundBox from "../components/SoundBox";
 import VMap from "../components/VirtualWalk/VirtualWalkMap";
@@ -15,10 +15,11 @@ function Specific() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [commentText, setCommentText] = useState("");
+  const [commentImage, setCommentImage] = useState(null);
   const [comments, setComments] = useState([]);
   const [visited, setVisited] = useState(false);
   const [visitCount, setVisitCount] = useState(0);
-  const [message, setMessage] = useState(""); 
+  const [message, setMessage] = useState("");
 
   const displayMessage = (text, isError = false) => {
     setMessage({ text, isError });
@@ -28,8 +29,8 @@ function Specific() {
   const toggleCityVisit = async () => {
     const userId = localStorage.getItem("userId");
     if (!userId) {
-        displayMessage("Please log in to track your visited cities.", true);
-        return;
+      displayMessage("Please log in to track your visited cities.", true);
+      return;
     }
 
     try {
@@ -47,7 +48,7 @@ function Specific() {
       displayMessage(data.visited ? "City marked as visited!" : "Visit status removed.", false);
     } catch (err) {
       console.error(err);
-      displayMessage("Error updating visit status.", true); 
+      displayMessage("Error updating visit status.", true);
     }
   };
 
@@ -72,10 +73,6 @@ function Specific() {
     fetchListing();
   }, [id]);
 
-  if (loading) return <p className="text-center mt-20 text-lg font-semibold text-gray-700">Loading City Details...</p>;
-  if (error) return <p className="text-center text-red-600 mt-20 font-semibold">Error: {error}</p>;
-  if (!listing) return <p className="text-center mt-20 text-lg font-semibold text-gray-700">Listing not found!</p>;
-
   const sliderSettings = {
     dots: true,
     infinite: true,
@@ -84,7 +81,7 @@ function Specific() {
     slidesToScroll: 1,
     autoplay: true,
     autoplaySpeed: 4000,
-    arrows: false, 
+    arrows: false,
     className: "w-full h-full",
     appendDots: dots => (
       <div style={{ bottom: "20px" }}>
@@ -97,15 +94,36 @@ function Specific() {
   };
 
   const handleCommentSubmit = async () => {
-    if (!commentText.trim()) {
+    if (!commentText.trim() && !commentImage) {
       displayMessage("Comment cannot be empty.", true);
       return;
     }
-    
+
     const userId = localStorage.getItem("userId");
     if (!userId) {
-        displayMessage("You must be logged in to comment.", true);
+      displayMessage("You must be logged in to comment.", true);
+      return;
+    }
+
+    let imageUrl = "";
+
+    if (commentImage) {
+      const formData = new FormData();
+      formData.append("image", commentImage);
+
+      try {
+        const res = await fetch("http://localhost:8000/api/upload/image", {
+          method: "POST",
+          body: formData,
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Image upload failed");
+        imageUrl = data.url;
+      } catch (err) {
+        console.error(err);
+        displayMessage("Failed to upload image.", true);
         return;
+      }
     }
 
     try {
@@ -115,6 +133,7 @@ function Specific() {
         body: JSON.stringify({
           listing: id,
           text: commentText,
+          image: imageUrl,
         }),
       });
 
@@ -123,12 +142,17 @@ function Specific() {
 
       setComments([...comments, data]);
       setCommentText("");
+      setCommentImage(null);
       displayMessage("Comment submitted successfully!", false);
     } catch (err) {
       console.error(err);
       displayMessage("Failed to submit comment.", true);
     }
   };
+
+  if (loading) return <p className="text-center mt-20 text-lg font-semibold text-gray-700">Loading City Details...</p>;
+  if (error) return <p className="text-center text-red-600 mt-20 font-semibold">Error: {error}</p>;
+  if (!listing) return <p className="text-center mt-20 text-lg font-semibold text-gray-700">Listing not found!</p>;
 
   return (
     <div className="bg-gradient-to-br from-indigo-50 to-purple-100 min-h-screen p-4 sm:p-6 lg:p-8 space-y-10 sm:space-y-12">
@@ -143,7 +167,7 @@ function Specific() {
           <div>
             <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900 leading-tight">{listing.title}</h1>
             <p className="text-base sm:text-lg text-pink-600 font-semibold flex items-center mt-1">
-              <MapPin className="w-4 h-4 sm:w-5 sm:h-5 mr-2" /> 
+              <MapPin className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
               {listing.location || "Unknown Location"}
             </p>
           </div>
@@ -198,7 +222,7 @@ function Specific() {
           </div>
           <p className="text-gray-600 mb-4">{listing.description}</p>
           <div className="h-[50vh] sm:h-[60vh] border border-dashed border-pink-300 flex items-center justify-center text-gray-500 bg-pink-50 rounded-lg">
-            <Quiz_info city={listing.title}/>
+            <Quiz_info city={listing.title} />
           </div>
         </div>
 
@@ -209,7 +233,7 @@ function Specific() {
           </div>
           <p className="text-gray-500 mb-4">Listen to the sounds of {listing.title}.</p>
           <div className="h-[50vh] sm:h-[60vh] flex items-center justify-center bg-indigo-50 rounded-lg border border-dashed border-indigo-300">
-            <SoundBox cityKey ={listing.title} />
+            <SoundBox cityKey={listing.title} />
           </div>
         </div>
       </div>
@@ -226,16 +250,13 @@ function Specific() {
         </div>
 
         <div className="space-y-6">
-          <div className="bg-white p-6 rounded-2xl shadow-xl border border-indigo-100 h-[62.1vh]">
-            <h3 className="text-xl font-bold text-gray-800 mb-4">City Location</h3>
-            <div className="h-[calc(100%-40px)] rounded-lg overflow-hidden border border-gray-200">
-              <Map />
-            </div>
+          <div className="bg-white p-6 rounded-2xl shadow-xl border border-indigo-100 h-[70vh] ">
+            <h3 className="text-xl font-bold text-gray-800 mb-4">Leaderboard</h3>
           </div>
 
           <div className="bg-white p-6 rounded-2xl shadow-xl border border-indigo-100">
             <h3 className="text-xl font-bold text-gray-800 flex items-center mb-4">
-              <MessageCircle className="w-5 h-5 mr-2 text-pink-500"/>
+              <MessageCircle className="w-5 h-5 mr-2 text-pink-500" />
               Community Chatter
             </h3>
 
@@ -247,6 +268,12 @@ function Specific() {
                 placeholder="What did you love about this city?"
                 value={commentText}
                 onChange={(e) => setCommentText(e.target.value)}
+              />
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => setCommentImage(e.target.files[0])}
+                className="mt-2"
               />
               <button
                 className="mt-3 px-6 py-2 bg-indigo-500 text-white font-semibold rounded-lg hover:bg-indigo-600 transition shadow-md shadow-indigo-300"
@@ -265,7 +292,15 @@ function Specific() {
                   {comments.map((c, idx) => (
                     <div key={idx} className="p-3 bg-gray-50 rounded-lg border border-gray-100">
                       <p className="text-gray-800">{c.text}</p>
-                      <p className="text-xs text-gray-400 mt-1">— Anonymous User (Placeholder)</p>
+                      {c.image && (
+                        <img
+                          src={c.image}
+                          alt="comment"
+                          className="mt-2 max-h-48 w-full object-cover rounded-md"
+                        />
+                      )}
+                      <p className="text-xs text-gray-400 mt-1">— {c.user?.name || "Anonymous"}</p>
+
                     </div>
                   ))}
                 </div>

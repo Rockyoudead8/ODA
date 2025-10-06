@@ -1,6 +1,4 @@
 const mongoose = require("mongoose");
-// Connect to MongoDB
-
 
 const commentSchema = new mongoose.Schema({
   user: {
@@ -16,6 +14,10 @@ const commentSchema = new mongoose.Schema({
     type: String,
     required: true,
     trim: true
+  },
+  image: {                // ← Add this
+    type: String,
+    default: ""           // optional, empty string if no image
   },
   createdAt: {
     type: Date,
