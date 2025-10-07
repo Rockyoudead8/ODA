@@ -81,6 +81,8 @@ router.post('/login', (req, res) => {
 
   const { email, password } = req.body;
   try {
+
+    if(!req.isAuthenticated()){
     passport.authenticate('local', (err, user, info) => {
       if (err) {
         return res.status(500).json({ message: "Server error" });
@@ -98,6 +100,9 @@ router.post('/login', (req, res) => {
         res.status(200).json({ message: "Login successful", user });
       });
     })(req, res);
+  } else {
+    res.status(200).json({ message: "User already logged in", user: req.user });
+  }
 
   } catch (err) {
     console.error(err);
@@ -132,6 +137,42 @@ router.post('/signup', async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 
+});
+
+// logout route 
+
+// see why just using req.logout is not working?? - IMPORTANT
+
+router.get("/logout", (req, res, next) => {
+  // console.log("Logout Route Hit");
+  // console.log("Is Authenticated:", req.isAuthenticated());
+
+  if (req.isAuthenticated()) {
+    req.logout((err) => {
+      if (err) return next(err); 
+
+      // destroying the entire session
+      req.session.destroy((err) => {
+        if (err) return next(err);
+
+        // Clear session cookie
+        res.clearCookie("connect.sid");
+
+        return res.status(200).json({ message: "Logout Successful" });
+        // return res.status(200).redirect('/login'); 
+
+      });
+    });
+  } else {
+    return res.status(401).json({ message: "User is not logged in" });
+  }
+});
+
+router.get("/status", (req, res) => {
+  if (req.isAuthenticated()) {
+    return res.status(200).json({ message: "User is logged in", user: req.user });
+  }
+  res.status(401).json({ message: "User is not logged in" });
 });
 
 module.exports = router;

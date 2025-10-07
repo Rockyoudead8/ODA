@@ -63,8 +63,9 @@ app.use(logger('dev'));
 
 // routes
 app.use('/', indexRouter);
-app.use('/api/auth', usersRouter);
+
 app.use('/api', listingsRouter);
+app.use('/api/auth', usersRouter); // user auth routes 
 app.use('/api/generate-sound', generateSoundRoute);
 app.use('/api/comments', commentsRoute);
 app.use('/api/generate_info', infoRouter);
@@ -72,6 +73,10 @@ app.use('/api/toggle-visit', usersRouter);
 app.use('/api/submit_quiz', submitRouter);
 app.use("/api/upload", uploadRoutes);
 app.use('/api/leaderboard', QuizRouter);
+
+
+
+
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
   next(createError(404));
