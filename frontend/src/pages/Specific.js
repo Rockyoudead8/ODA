@@ -254,7 +254,7 @@ function Specific() {
 
         <div className="space-y-6">
           <div className="bg-white p-6 rounded-2xl shadow-xl border border-indigo-100 h-[70vh] ">
-            <Leaderboard/>
+            <Leaderboard listingId={listing._id}/>
           </div>
 
           <div className="bg-white p-6 rounded-2xl shadow-xl border border-indigo-100">

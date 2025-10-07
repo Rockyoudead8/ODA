@@ -1,45 +1,56 @@
-// const express = require("express");
-// const router = express.Router();
-// const QuizResult = require("../models/QuizResult");
+const express = require("express");
+const router = express.Router();
+const QuizResult = require("../models/QuizResult");
+const Listing = require("../models/listings");
+const User = require("../models/users");
 
-// router.post("/", async (req, res) => {
-//   try {
-//     const { userId, listingId, city, userAnswers, correctAnswers } = req.body;
+router.get("/:listingId", async (req, res) => {
+  try {
+    const { listingId } = req.params;
 
-//     if (!userId || !listingId || !city || !userAnswers || !correctAnswers) {
-//       return res.status(400).json({ error: "Missing required data." });
-//     }
+    if (!listingId) return res.status(400).json({ error: "listingId is required" });
 
-//     if (userAnswers.length !== correctAnswers.length) {
-//       return res.status(400).json({ error: "Question count mismatch." });
-//     }
+    const listing = await Listing.findById(listingId);
+    if (!listing) return res.status(404).json({ error: "Listing not found" });
+    const city = listing.title;
 
-//     const score = userAnswers.reduce((acc, ans, i) => {
-//       return acc + ((ans || "").trim().toLowerCase() === (correctAnswers[i] || "").trim().toLowerCase() ? 1 : 0);
-//     }, 0);
+    
+    const results = await QuizResult.find({ city });
 
-//     const total = correctAnswers.length;
+    const userTotals = {};
+    for (const r of results) {
+      if (!r.userId || r.userId === "undefined") continue; 
+      if (!userTotals[r.userId]) {
+        userTotals[r.userId] = { id: r.userId, total: r.total || 0 };
+      } else {
+        userTotals[r.userId].total += r.total || 0;
+      }
+    }
 
-//     const result = new QuizResult({
-//       user: userId,          // <-- matches schema
-//       listing: listingId,    // <-- matches schema
-//       city,
-//       userAnswers,
-//       correctAnswers,
-//       score,
-//       total,                 // <-- required by schema
-//       date: new Date(),
-//     });
+    const userIds = Object.keys(userTotals);
 
-//     await result.save();
+    
+    const validUserIds = userIds.filter(id => /^[0-9a-fA-F]{24}$/.test(id));
+    const users = await User.find({ _id: { $in: validUserIds } }).select("name");
 
-//     res.status(200).json({
-//       message: "Quiz submitted successfully",
-//       score,
-//       total,
-//     });
-//   } catch (err) {
-//     console.error("Error saving quiz result:", err);
-//     res.status(500).json({ error: "Failed to submit quiz" });
-//   }
-// });
+    const userMap = {};
+    users.forEach(u => {
+      userMap[u._id.toString()] = u.name;
+    });
+
+    const leaderboard = Object.values(userTotals).map(u => ({
+      id: u.id,
+      name: userMap[u.id] || "Anonymous",
+      total: u.total,
+    }));
+
+    leaderboard.sort((a, b) => b.total - a.total);
+
+    res.status(200).json(leaderboard);
+  } catch (err) {
+    console.error("Leaderboard fetch error:", err);
+    res.status(500).json({ error: "Failed to fetch leaderboard" });
+  }
+});
+
+module.exports = router;

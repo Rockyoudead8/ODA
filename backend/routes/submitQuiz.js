@@ -32,12 +32,19 @@ router.post("/", async (req, res) => {
       });
     });
 
+
+    const previousResults = await QuizResult.find({ userId, city });
+    const previousTotal = previousResults.reduce((acc, r) => acc + (r.score || 0), 0);
+
+    const totalScore = previousTotal + score;
+
     const result = new QuizResult({
       userId,
       city,
       userAnswers,
       correctAnswers,
       score,
+      total: totalScore, 
       date: new Date(),
     });
 
@@ -46,6 +53,7 @@ router.post("/", async (req, res) => {
     res.status(200).json({
       message: "Quiz submitted successfully",
       score,
+      total: totalScore,
       feedback,
     });
   } catch (err) {
