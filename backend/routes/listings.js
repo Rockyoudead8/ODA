@@ -116,5 +116,22 @@ router.get("/listing/:id", async (req, res) => {
     }
 });
 
+// fetch the city based on its name
+router.get("/cities/:name", async (req, res) => {
+  try {
+    const cityName = req.params.name;
+    const city = await listings.findOne({ title: cityName });
+
+    if (!city) {
+      return res.status(404).json({ message: "City not found" });
+    }
+
+    res.json(city);
+  } catch (error) {
+    console.error("Error fetching city:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 
 module.exports = router;

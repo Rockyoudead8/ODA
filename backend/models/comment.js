@@ -15,9 +15,9 @@ const commentSchema = new mongoose.Schema({
     required: true,
     trim: true
   },
-  image: {                // ← Add this
+  image: {                
     type: String,
-    default: ""           // optional, empty string if no image
+    default: ""           
   },
   createdAt: {
     type: Date,

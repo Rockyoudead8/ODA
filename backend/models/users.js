@@ -29,8 +29,11 @@ const userSchema = new mongoose.Schema({
     enum: ['user', 'admin', 'instructor'],
     default: 'user'
   },
-  bio:{
-    type :String,
+  bio: {
+    type: String,
+  },
+  defaultCity: {
+    type: String,
   },
   citiesVisited: {
     type: Number,
