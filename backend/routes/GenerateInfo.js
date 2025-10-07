@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const { GoogleGenerativeAI } = require("@google/generative-ai");
+const CityData = require("../models/CityData");
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
@@ -13,12 +14,27 @@ const model = genAI.getGenerativeModel({
   },
 });
 
+// Cache time: 12 hours (in milliseconds)
+const CACHE_TTL = 1000 * 60 * 60 * 12;
+
 router.post("/", async (req, res) => {
   try {
     const { city } = req.body;
     if (!city) {
       return res.status(400).json({ error: "City is required in the request body." });
     }
+
+    const cityKey = city.toLowerCase().trim();
+
+    // Check if city data exists and is still valid
+    const existing = await CityData.findOne({ city: cityKey });
+
+    if (existing && Date.now() - new Date(existing.updatedAt).getTime() < CACHE_TTL) {
+      console.log(`Returning cached data for ${cityKey}`);
+      return res.status(200).json(existing.data);
+    }
+
+    console.log(` Generating new data for ${cityKey}...`);
 
     const prompt = `
 You are a historian and quiz creator.
@@ -82,10 +98,9 @@ Each quiz question must have exactly one correct answer, 4 options, and a short 
 Include at least 5 important dates in the timeline. Each date should have a brief description that can be shown as a marker on a road/timeline in a frontend component.
 `;
 
-
     const result = await model.generateContent(prompt);
 
-    // --- Extract text robustly ---
+    // Extract text safely
     let text =
       (typeof result.response?.text === "function"
         ? await result.response.text()
@@ -99,7 +114,6 @@ Include at least 5 important dates in the timeline. Each date should have a brie
       return res.status(500).json({ error: "Model returned empty content." });
     }
 
-    // Remove Markdown code block syntax
     text = text.replace(/```json|```/g, "").trim();
 
     let parsed;
@@ -110,6 +124,19 @@ Include at least 5 important dates in the timeline. Each date should have a brie
       return res.status(500).json({ error: "Model returned invalid JSON format." });
     }
 
+    // Save or update (safe against duplicate key errors)
+    await CityData.findOneAndUpdate(
+      { city: cityKey },
+      {
+        $set: {
+          data: parsed,
+          updatedAt: new Date(),
+        },
+      },
+      { upsert: true, new: true }
+    );
+
+    console.log(`done Cached/Updated data for ${cityKey}`);
     res.status(200).json(parsed);
   } catch (err) {
     console.error("Internal error:", err);

@@ -56,25 +56,37 @@ function Specific() {
   };
 
   useEffect(() => {
-    const fetchListing = async () => {
-      try {
-        const res = await fetch(`http://localhost:8000/api/listing/${id}`);
-        const data = await res.json();
+  const increaseVisits = async () => {
+    try {
+      await fetch("http://localhost:8000/api/listing/increase_visits", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ listingId: id }),
+      });
+    } catch (error) {
+      console.error("Failed to increase visits:", error.message);
+    }
+  };
 
-        if (!res.ok) {
-          throw new Error(data.error || "Failed to fetch listing");
-        }
+  const fetchListing = async () => {
+    try {
+      const res = await fetch(`http://localhost:8000/api/listing/${id}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to fetch listing");
+      setListing(data);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-        setListing(data);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
+  if (id) {
+    increaseVisits();
     fetchListing();
-  }, [id]);
+  }
+}, [id]);
+
 
   const sliderSettings = {
     dots: true,

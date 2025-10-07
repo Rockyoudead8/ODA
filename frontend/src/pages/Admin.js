@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from "react";
-import { Line, Pie, Bar } from "react-chartjs-2";
+import { Line, Bar } from "react-chartjs-2";
 import {
   Chart as ChartJS,
   LineElement,
@@ -123,7 +123,6 @@ const Check = () => {
 
   const primaryIndigo = "rgba(99, 102, 241, 1)";
   const secondaryPink = "rgba(236, 72, 153, 1)";
-  const tertiaryTeal = "rgba(20, 184, 166, 1)";
 
   const lineData = {
     labels: quizResults.map((q, i) => `Quiz ${i + 1}`),
@@ -141,18 +140,6 @@ const Check = () => {
     ],
   };
 
-  const pieData = {
-    labels: ["History", "Culture", "Others"],
-    datasets: [
-      {
-        label: "Performance Categories",
-        data: [40, 30, 30],
-        backgroundColor: [primaryIndigo, secondaryPink, tertiaryTeal],
-        borderWidth: 2,
-        borderColor: "#ffffff",
-      },
-    ],
-  };
 
   const cityNames = userData.visitedCities || [];
   const visitCounts = cityNames.map(() => 1);
@@ -255,7 +242,6 @@ const Check = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-8">
           
-          {/* User Profile Section (Col 1 or 1/4) */}
           <div className="lg:col-span-1 bg-white p-6 sm:p-8 rounded-3xl shadow-2xl border-t-8 border-indigo-500 h-fit">
             <h2 className="text-2xl font-bold mb-6 text-indigo-700 flex items-center">
                 <MapPin className="w-5 h-5 mr-2 text-pink-500" /> User Profile
@@ -295,25 +281,18 @@ const Check = () => {
             </div>
           </div>
 
-          {/* Charts and Summary Section (Col 2-4 or 3/4) */}
           <div className="lg:col-span-2 xl:col-span-3 space-y-8">
             
-            {/* Quiz Performance */}
             <div className="bg-white p-6 sm:p-8 rounded-3xl shadow-2xl border border-gray-100">
               <h2 className="text-2xl font-bold mb-6 text-indigo-700">Quiz Performance Over Time</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="grid grid-cols-1 gap-8">
                 <div className="p-4 border border-gray-100 rounded-2xl shadow-inner transition hover:shadow-lg">
                   <h3 className="text-lg font-semibold mb-3 text-gray-700">Recent Scores</h3>
                   <Line data={lineData} options={{ maintainAspectRatio: true, responsive: true }} />
                 </div>
-                <div className="p-4 border border-gray-100 rounded-2xl shadow-inner transition hover:shadow-lg">
-                  <h3 className="text-lg font-semibold mb-3 text-gray-700">Category Breakdown</h3>
-                  <Pie data={pieData} options={{ maintainAspectRatio: true, responsive: true }} />
-                </div>
               </div>
             </div>
 
-            {/* City Exploration */}
             <div className="bg-white p-6 sm:p-8 rounded-3xl shadow-2xl border border-gray-100">
               <h2 className="text-2xl font-bold mb-6 text-indigo-700">City Exploration Summary</h2>
               <div className="flex flex-col xl:flex-row items-center gap-8">
