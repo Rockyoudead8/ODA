@@ -16,14 +16,13 @@ const generateSoundRoute = require('./routes/generateSound');
 var listingsRouter = require('./routes/listings');
 var passport = require("passport");
 var localStrategy = require("passport-local");
+const userModel = require("./models/users");
 const cors = require('cors');
 var app = express();
 
 app.use(cors({
   origin: 'http://localhost:3000', // React's port
 }));
-
-
 
 const mongoose = require('mongoose');
 
@@ -38,24 +37,31 @@ mongoose.connect(process.env.MONGODB_URL, {
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
+
+// session config
 app.use(session({
   resave: false,
   saveUninitialized: false,
   secret: "adhakbaglgagfgfdf",
 }));
-// app.use(passport.initialize());
-// app.use(passport.session());
-// passport.serializeUser(usersRouter.serializeUser());
-// passport.deserializeUser(usersRouter.deserializeUser()); 
-app.use(logger('dev'));
+
+// body parser middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Passport config
+app.use(passport.initialize());
+app.use(passport.session());
+passport.serializeUser(userModel.serializeUser());
+passport.deserializeUser(userModel.deserializeUser());
+passport.use(userModel.createStrategy());
 
+//logger
+app.use(logger('dev'));
 
-
+// routes
 app.use('/', indexRouter);
 app.use('/api/auth', usersRouter);
 app.use('/api', listingsRouter);

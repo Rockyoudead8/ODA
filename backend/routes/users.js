@@ -7,6 +7,8 @@ const comment = require("../models/comment");
 const listings = require("../models/listings");
 const quiz = require("../models/quiz");
 const quizResult = require("../models/QuizResult");
+const passport = require("passport");
+const localStrategy = require("passport-local");
 
 
 router.post("/get_user", async (req, res) => {
@@ -29,6 +31,7 @@ router.post("/get_user", async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 });
+
 
 // user ki visited cities ko count krne ka code
 router.post("/", async (req, res) => {
@@ -73,54 +76,62 @@ router.post("/", async (req, res) => {
 });
 
 
-// user ko login krane ka code
-router.post('/login', async (req, res) => {
+// login route
+router.post('/login', (req, res) => {
+
   const { email, password } = req.body;
   try {
+    passport.authenticate('local', (err, user, info) => {
+      if (err) {
+        return res.status(500).json({ message: "Server error" });
+      }
 
-    const existingUser = await user.findOne({ email });
-    if (!existingUser) {
-      return res.status(404).json({ message: "User not found" });
-    }
+      if (!user) {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
 
+      req.login(user, (err) => {
+        if (err) {
+          return res.status(500).json({ message: "Login failed" });
+        }
 
-    const isMatch = await bcrypt.compare(password, existingUser.password);
-    if (!isMatch) {
-      return res.status(400).json({ message: "Invalid credentials" });
-    }
+        res.status(200).json({ message: "Login successful", user });
+      });
+    })(req, res);
 
-
-    res.status(200).json({ message: "Login successful", user: existingUser });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: "Server error"  , error: err.message});
   }
+
 });
 
-// user ko signup krane ka code
+// signup route
 router.post('/signup', async (req, res) => {
+
   const { name, email, password } = req.body;
 
-
   try {
-    const isUser = await user.findOne({ email });
-    if (isUser) {
-      return res.status(200).json({ message: "User already exists , please log in" });
-    }
-    const hashedPass = await bcrypt.hash(password, 10);
-    const newUser = await user.create({
-      name: name,
-      email: email,
-      password: hashedPass,
+
+    const newUser = new user({ name, email, password });
+    const registeredUser = await user.register(newUser, password);
+
+
+    // login the user after signup 
+    req.login(registeredUser, (err) => {
+      
+      if (err) {
+        return res.status(500).json({ message: "Login after signup failed" });
+      }
+
+      res.status(201).json({ message: "User created And logged in successfully", user: registeredUser });
     });
-    await newUser.save();
-    res.status(201).json({ message: "user created successfully", user: newUser });
+
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: err.message });
   }
+
 });
-
-
 
 module.exports = router;
