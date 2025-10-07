@@ -7,7 +7,10 @@ import VMap from "../components/VirtualWalk/VirtualWalkMap";
 import Slider from "react-slick";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
+import Leaderboard from "../components/Leaderboard";
+import Timeline from "../components/Timeline";
 import { Heart, MapPin, MessageCircle, Volume2, Globe, Clock, CheckCircle } from "lucide-react";
+
 
 function Specific() {
   const { id } = useParams();
@@ -251,7 +254,7 @@ function Specific() {
 
         <div className="space-y-6">
           <div className="bg-white p-6 rounded-2xl shadow-xl border border-indigo-100 h-[70vh] ">
-            <h3 className="text-xl font-bold text-gray-800 mb-4">Leaderboard</h3>
+            <Leaderboard/>
           </div>
 
           <div className="bg-white p-6 rounded-2xl shadow-xl border border-indigo-100">
@@ -309,6 +312,15 @@ function Specific() {
           </div>
         </div>
       </div>
+      
+
+      
+      <div className="bg-white p-6 rounded-2xl shadow-xl border border-indigo-100 ">
+        <h2 className="text-2xl font-bold text-indigo-600 mb-4">City Timeline</h2>
+        <Timeline city={listing.title} />
+      </div>
+
+
     </div>
   );
 }

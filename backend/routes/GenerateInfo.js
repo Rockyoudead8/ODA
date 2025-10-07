@@ -30,6 +30,20 @@ Return ONLY valid JSON (no markdown, text, or commentary outside JSON).
   "history": "A short but detailed historical background of the city.",
   "facts": ["fact1", "fact2", "fact3", "fact4"],
   "famousStory": "A famous legend, myth, or cultural story associated with the city.",
+  "timeline": [
+    {
+      "date": "YYYY-MM-DD or just Year",
+      "event": "Brief description of what happened on this date or year in this city."
+    },
+    {
+      "date": "YYYY",
+      "event": "Another important historical event."
+    },
+    {
+      "date": "YYYY",
+      "event": "Another significant milestone."
+    }
+  ],
   "quizQuestions": [
     {
       "question": "Q1?",
@@ -64,8 +78,10 @@ Return ONLY valid JSON (no markdown, text, or commentary outside JSON).
   ]
 }
 
-Each quiz question must have exactly one correct answer, 4 options, and a short explanation (2–3 lines maximum).
+Each quiz question must have exactly one correct answer, 4 options, and a short explanation (2–3 lines maximum). 
+Include at least 5 important dates in the timeline. Each date should have a brief description that can be shown as a marker on a road/timeline in a frontend component.
 `;
+
 
     const result = await model.generateContent(prompt);
 

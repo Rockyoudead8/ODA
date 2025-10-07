@@ -7,10 +7,11 @@ var logger = require('morgan');
 var session = require("express-session");
 var indexRouter = require('./routes/index');
 var infoRouter = require('./routes/GenerateInfo');
-var submitRouter= require('./routes/submitQuiz');
+var submitRouter = require('./routes/submitQuiz');
 var usersRouter = require('./routes/users');
 var uploadRoutes = require('./routes/upload');
 var commentsRoute = require('./routes/comments');
+// var QuizRouter = require('./routes/QuizResult');
 const generateSoundRoute = require('./routes/generateSound');
 var listingsRouter = require('./routes/listings');
 var passport = require("passport");
@@ -61,10 +62,10 @@ app.use('/api', listingsRouter);
 app.use('/api/generate-sound', generateSoundRoute);
 app.use('/api/comments', commentsRoute);
 app.use('/api/generate_info', infoRouter);
-app.use('/api/toggle-visit',usersRouter);
-app.use('/api/submit_quiz',submitRouter);
+app.use('/api/toggle-visit', usersRouter);
+app.use('/api/submit_quiz', submitRouter);
 app.use("/api/upload", uploadRoutes);
-
+// app.use('/api/leaderboard', QuizRouter);
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
   next(createError(404));
