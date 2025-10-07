@@ -7,6 +7,7 @@ function CityInfo({ city }) {
   const [userAnswers, setUserAnswers] = useState({});
   const [result, setResult] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const [showExplanations, setShowExplanations] = useState({});
 
   useEffect(() => {
     if (!city) return;
@@ -17,6 +18,7 @@ function CityInfo({ city }) {
       setData(null);
       setResult(null);
       setUserAnswers({});
+      setShowExplanations({});
 
       try {
         const res = await fetch("http://localhost:8000/api/generate_info", {
@@ -48,10 +50,13 @@ function CityInfo({ city }) {
     setUserAnswers(prev => ({ ...prev, [qIndex]: option }));
   };
 
+  const toggleExplanation = (index) => {
+    setShowExplanations(prev => ({ ...prev, [index]: !prev[index] }));
+  };
+
   const handleSubmitQuiz = async () => {
     if (!data?.quizQuestions || submitting) return;
     
-    // Check if ALL questions have been answered
     const totalQuestions = data.quizQuestions.length;
     if (Object.keys(userAnswers).length < totalQuestions) {
         setFetchError(`Please answer all ${totalQuestions} questions before submitting.`);
@@ -63,9 +68,7 @@ function CityInfo({ city }) {
     setFetchError(null);
 
     const userAnswersArray = data.quizQuestions.map((_, i) => userAnswers[i] || "");
-    
-    // 🚨 FIX: Correctly map the answer key to match the backend prompt
-    const correctAnswers = data.quizQuestions.map(q => q.correctAnswer); 
+    const correctAnswers = data.quizQuestions.map(q => q.correctAnswer);
 
     try {
       const userId = localStorage.getItem("userId"); 
@@ -93,7 +96,6 @@ function CityInfo({ city }) {
       setSubmitting(false);
     }
   };
-
 
   return (
     <div className="w-full h-full flex flex-col">
@@ -127,30 +129,77 @@ function CityInfo({ city }) {
               <p className="text-gray-700 text-sm leading-relaxed">{data.famousStory}</p>
             </div>
 
+            {/* QUIZ SECTION */}
             <div>
               <h3 className="text-lg font-bold text-indigo-700 border-b border-indigo-100 pb-1 mb-3">Quiz</h3>
               <div className="space-y-4">
-                {data.quizQuestions?.map((q, i) => (
-                  <div key={i} className={`border p-3 rounded-lg shadow-sm ${userAnswers[i] ? 'border-pink-300 bg-pink-50' : 'border-indigo-200 bg-indigo-50'}`}>
-                    <p className="font-semibold text-gray-800 text-sm mb-2"><strong>{i + 1}. {q.question}</strong></p>
-                    <div className="space-y-1 text-xs text-gray-600">
-                      {q.options?.map((opt, j) => (
-                        <div key={j} className="flex items-center">
-                          <input
-                            type="radio"
-                            id={`q${i}o${j}`}
-                            name={`q-${i}`}
-                            value={opt}
-                            checked={userAnswers[i] === opt}
-                            onChange={() => handleAnswerSelect(i, opt)}
-                            className="mr-2 h-3 w-3 text-pink-600 border-gray-300 cursor-pointer focus:ring-pink-500"
-                          />
-                          <label htmlFor={`q${i}o${j}`} className="cursor-pointer">{opt}</label>
+                {data.quizQuestions?.map((q, i) => {
+                  const userAnswer = userAnswers[i];
+                  const correct = result && q.correctAnswer === userAnswer;
+
+                  return (
+                    <div
+                      key={i}
+                      className={`border p-3 rounded-lg shadow-sm ${
+                        result
+                          ? correct
+                            ? "border-green-400 bg-green-50"
+                            : "border-red-400 bg-red-50"
+                          : userAnswer
+                          ? "border-pink-300 bg-pink-50"
+                          : "border-indigo-200 bg-indigo-50"
+                      }`}
+                    >
+                      <p className="font-semibold text-gray-800 text-sm mb-2">
+                        <strong>{i + 1}. {q.question}</strong>
+                      </p>
+
+                      <div className="space-y-1 text-xs text-gray-600">
+                        {q.options?.map((opt, j) => (
+                          <div key={j} className="flex items-center">
+                            <input
+                              type="radio"
+                              id={`q${i}o${j}`}
+                              name={`q-${i}`}
+                              value={opt}
+                              checked={userAnswer === opt}
+                              onChange={() => handleAnswerSelect(i, opt)}
+                              disabled={!!result} // disable after submit
+                              className="mr-2 h-3 w-3 text-pink-600 border-gray-300 cursor-pointer focus:ring-pink-500"
+                            />
+                            <label
+                              htmlFor={`q${i}o${j}`}
+                              className={`cursor-pointer ${
+                                result && opt === q.correctAnswer
+                                  ? "text-green-700 font-medium"
+                                  : result && userAnswer === opt && opt !== q.correctAnswer
+                                  ? "text-red-700 font-medium"
+                                  : ""
+                              }`}
+                            >
+                              {opt}
+                            </label>
+                          </div>
+                        ))}
+                      </div>
+
+                      {result && (
+                        <button
+                          onClick={() => toggleExplanation(i)}
+                          className="text-xs text-blue-600 underline mt-2"
+                        >
+                          {showExplanations[i] ? "Hide Explanation" : "Show Explanation"}
+                        </button>
+                      )}
+
+                      {showExplanations[i] && result && (
+                        <div className="mt-2 p-2 bg-gray-100 text-gray-700 rounded text-xs">
+                          <strong>Explanation:</strong> {q.explanation}
                         </div>
-                      ))}
+                      )}
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
               <button

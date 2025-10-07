@@ -20,47 +20,52 @@ router.post("/", async (req, res) => {
       return res.status(400).json({ error: "City is required in the request body." });
     }
 
-   
     const prompt = `
 You are a historian and quiz creator.
+
 Generate detailed JSON data for the city "${city}" in exactly this format.
-ONLY return JSON (no explanation or text outside JSON).
+Return ONLY valid JSON (no markdown, text, or commentary outside JSON).
 
 {
-  "history": "Short history of the city",
+  "history": "A short but detailed historical background of the city.",
   "facts": ["fact1", "fact2", "fact3", "fact4"],
-  "famousStory": "A famous legend or story about the city",
+  "famousStory": "A famous legend, myth, or cultural story associated with the city.",
   "quizQuestions": [
     {
       "question": "Q1?",
       "options": ["A", "B", "C", "D"],
-      "correctAnswer": "B"
+      "correctAnswer": "B",
+      "explanation": "Short explanation about why option B is correct or extra info related to this fact."
     },
     {
       "question": "Q2?",
       "options": ["A", "B", "C", "D"],
-      "correctAnswer": "D"
+      "correctAnswer": "D",
+      "explanation": "Explanation or historical reasoning for this question's answer."
     },
     {
       "question": "Q3?",
       "options": ["A", "B", "C", "D"],
-      "correctAnswer": "A"
+      "correctAnswer": "A",
+      "explanation": "Concise educational note or background for learners."
     },
     {
       "question": "Q4?",
       "options": ["A", "B", "C", "D"],
-      "correctAnswer": "C"
+      "correctAnswer": "C",
+      "explanation": "Explanation giving cultural or historical relevance."
     },
     {
       "question": "Q5?",
       "options": ["A", "B", "C", "D"],
-      "correctAnswer": "B"
+      "correctAnswer": "B",
+      "explanation": "Extra insight or trivia about this question topic."
     }
   ]
 }
-Each quiz question must have exactly one correct answer and 4 options.
-`;
 
+Each quiz question must have exactly one correct answer, 4 options, and a short explanation (2–3 lines maximum).
+`;
 
     const result = await model.generateContent(prompt);
 
@@ -78,6 +83,7 @@ Each quiz question must have exactly one correct answer and 4 options.
       return res.status(500).json({ error: "Model returned empty content." });
     }
 
+    // Remove Markdown code block syntax
     text = text.replace(/```json|```/g, "").trim();
 
     let parsed;
