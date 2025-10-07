@@ -9,9 +9,10 @@ const quiz = require("../models/quiz");
 const quizResult = require("../models/QuizResult");
 const passport = require("passport");
 const localStrategy = require("passport-local");
+const isLoggedIn = require('../middlewares/mw');
 
 
-router.post("/get_user", async (req, res) => {
+router.post("/get_user", isLoggedIn ,  async (req, res) => {
   try {
     const { userId } = req.body;
 
@@ -34,7 +35,7 @@ router.post("/get_user", async (req, res) => {
 
 
 // user ki visited cities ko count krne ka code
-router.post("/", async (req, res) => {
+router.post("/", isLoggedIn, async (req, res) => {
   try {
     const { userId, listingId } = req.body;
 
@@ -83,6 +84,7 @@ router.post('/login', (req, res) => {
   try {
 
     if(!req.isAuthenticated()){
+
     passport.authenticate('local', (err, user, info) => {
       if (err) {
         return res.status(500).json({ message: "Server error" });
@@ -100,6 +102,7 @@ router.post('/login', (req, res) => {
         res.status(200).json({ message: "Login successful", user });
       });
     })(req, res);
+
   } else {
     res.status(200).json({ message: "User already logged in", user: req.user });
   }
@@ -168,10 +171,12 @@ router.get("/logout", (req, res, next) => {
   }
 });
 
+//check if user is logged in route
 router.get("/status", (req, res) => {
   if (req.isAuthenticated()) {
     return res.status(200).json({ message: "User is logged in", user: req.user });
   }
+  // console.log("Not Authenticated");
   res.status(401).json({ message: "User is not logged in" });
 });
 

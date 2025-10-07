@@ -18,10 +18,12 @@ var passport = require("passport");
 var localStrategy = require("passport-local");
 const userModel = require("./models/users");
 const cors = require('cors');
+var isLoggedIn = require('./middlewares/mw');
 var app = express();
 
 app.use(cors({
   origin: 'http://localhost:3000', // React's port
+  credentials: true,
 }));
 
 const mongoose = require('mongoose');
@@ -66,10 +68,13 @@ app.use('/', indexRouter);
 
 app.use('/api', listingsRouter);
 app.use('/api/auth', usersRouter); // user auth routes 
+
+app.use('/api/toggle-visit', usersRouter);
+
+app.use(isLoggedIn); // Middleware to check if user is logged in for all routes below this line
 app.use('/api/generate-sound', generateSoundRoute);
 app.use('/api/comments', commentsRoute);
 app.use('/api/generate_info', infoRouter);
-app.use('/api/toggle-visit', usersRouter);
 app.use('/api/submit_quiz', submitRouter);
 app.use("/api/upload", uploadRoutes);
 app.use('/api/leaderboard', QuizRouter);

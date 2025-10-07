@@ -7,6 +7,7 @@ const comment = require("../models/comment");
 const listings = require("../models/listings");
 const quiz = require("../models/quiz");
 const quizResult = require("../models/QuizResult");
+var isLoggedIn = require('../middlewares/mw');
 
 
 router.post('/insert-dummy', async (req, res) => {
