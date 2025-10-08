@@ -10,11 +10,12 @@ import LoginPage from './pages/LoginPage'
 import SignupPage from './pages/SignupPage'
 import 'leaflet/dist/leaflet.css';
 import Explore from './pages/Explore'
-
+import Logout from './components/Logout'
 function App() {
   return (
     <>
     <BrowserRouter>
+    <Logout/>
     <Header/>
     <Routes>
    <Route path='/' element={<LoginPage/>}/>

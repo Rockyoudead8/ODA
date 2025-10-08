@@ -17,17 +17,15 @@ function LoginPage() {
       const response = await fetch("http://localhost:8000/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ email, password }),
       });
 
       const data = await response.json();
-      console.log(data);
-
       if (response.ok) {
-        localStorage.setItem("userId", data.user._id);
-        navigate("/Check");
+        navigate('/Check');
       } else {
-        setError(data.error || "Invalid login credentials");
+        setError("Login failed. Please try again.");
       }
     } catch (err) {
       console.error("Login error:", err);

@@ -147,11 +147,13 @@ router.post('/signup', async (req, res) => {
 // see why just using req.logout is not working?? - IMPORTANT
 
 router.get("/logout", (req, res, next) => {
-  // console.log("Logout Route Hit");
+  console.log("Logout Route Hit");
   // console.log("Is Authenticated:", req.isAuthenticated());
 
   if (req.isAuthenticated()) {
+
     req.logout((err) => {
+      console.log(err);
       if (err) return next(err); 
 
       // destroying the entire session
@@ -165,10 +167,13 @@ router.get("/logout", (req, res, next) => {
         // return res.status(200).redirect('/login'); 
 
       });
+
     });
+
   } else {
     return res.status(401).json({ message: "User is not logged in" });
   }
+
 });
 
 //check if user is logged in route

@@ -4,11 +4,34 @@ import Map from "../components/Map.js"
 import { Search } from "lucide-react";
 
 function Hero() {
+    const [userData, setUserData] = useState(null);
   const [listings, setListings] = useState([]); 
   const [filteredListings, setFilteredListings] = useState([]); 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState(""); 
+
+  // const fetchUserData = async () => {
+  //   try {
+  //     const response = await fetch("http://localhost:8000/api/auth/status", {
+  //       method: "GET",
+  //       credentials: "include",
+  //     });
+  //     const data = await response.json();
+  //     if (response.ok) setUserData(data.user);
+  //     else setError("Failed to fetch user data");
+      
+  //   } catch {
+  //     setError("Something went wrong. Please try again.");
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
+  
+  //   useEffect(() => {
+  //     fetchUserData();
+  //   }, []);
 
   useEffect(() => {
     const fetchListings = async () => {
