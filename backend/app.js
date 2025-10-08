@@ -71,7 +71,8 @@ app.use('/api/auth', usersRouter); // user auth routes
 
 app.use('/api/toggle-visit', usersRouter);
 
-app.use(isLoggedIn); // Middleware to check if user is logged in for all routes below this line
+// app.use(isLoggedIn); // Middleware to check if user is logged in for all routes below this line
+
 app.use('/api/generate-sound', generateSoundRoute);
 app.use('/api/comments', commentsRoute);
 app.use('/api/generate_info', infoRouter);

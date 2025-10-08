@@ -12,7 +12,7 @@ const localStrategy = require("passport-local");
 const isLoggedIn = require('../middlewares/mw');
 
 
-router.post("/get_user", isLoggedIn ,  async (req, res) => {
+router.post("/get_user",  async (req, res) => {
   try {
     const { userId } = req.body;
 
@@ -35,7 +35,7 @@ router.post("/get_user", isLoggedIn ,  async (req, res) => {
 
 
 // user ki visited cities ko count krne ka code
-router.post("/", isLoggedIn, async (req, res) => {
+router.post("/", async (req, res) => {
   try {
     const { userId, listingId } = req.body;
 

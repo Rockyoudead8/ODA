@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams ,useNavigate } from "react-router-dom";
 import Map from "../components/Map";
 import Quiz_info from "../components/CityInfo";
 import SoundBox from "../components/SoundBox";
@@ -11,8 +11,8 @@ import Leaderboard from "../components/Leaderboard";
 import Timeline from "../components/Timeline";
 import { Heart, MapPin, MessageCircle, Volume2, Globe, Clock, CheckCircle } from "lucide-react";
 
-
 function Specific() {
+  const navigate = useNavigate();
   const { id } = useParams();
   const [listing, setListing] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -56,7 +56,9 @@ function Specific() {
   };
 
   useEffect(() => {
-    const fetchListing = async () => {
+
+    const fetchListing = async () => { 
+
       try {
         const res = await fetch(`http://localhost:8000/api/listing/${id}`);
         const data = await res.json();
