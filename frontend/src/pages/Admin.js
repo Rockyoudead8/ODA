@@ -1,5 +1,6 @@
+// changed from github main
 import React, { useEffect, useState } from "react";
-import { Line, Pie, Bar } from "react-chartjs-2";
+import { Line, Bar } from "react-chartjs-2";
 import {
   Chart as ChartJS,
   LineElement,
@@ -42,64 +43,66 @@ const Admin = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadMessage, setUploadMessage] = useState({ type: "", text: "" });
 
-  const fetchUserData = async () => {
+  const fetchUserDataAndQuiz = async () => {
+    const userId = typeof localStorage !== "undefined" ? localStorage.getItem("userId") : null;
+    if (!userId) {
+      setError("User ID not found");
+      setLoading(false);
+      return;
+    }
+
     try {
-      const response = await fetch("http://localhost:8000/api/auth/status", {
-        method: "GET",
-        credentials: "include",
+      // Fetch user data
+      const response = await fetch("http://localhost:8000/api/auth/get_user", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId }),
       });
       const data = await response.json();
       if (response.ok) setUserData(data.user);
-      else setError("Failed to fetch user data");
-      
-    } catch {
+      else setError(data.error || "User not found");
+
+      // Fetch quiz results
+      const quizRes = await fetch("http://localhost:8000/api/submit_quiz/get_quiz", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId }),
+      });
+      const quizData = await quizRes.json();
+      if (quizRes.ok) setQuizResults(quizData || []);
+      else console.warn("Quiz fetch error:", quizData.error);
+    } catch (err) {
+      console.error("Unknown error:", err);
       setError("Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchQuizResults = async (userId) => {
-    try {
-      const quizRes = await fetch("http://localhost:8000/api/submit_quiz/get_quiz", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ userId }),
-      });
-      const quizData = await quizRes.json();
-      if (quizRes.ok) setQuizResults(quizData || []);
-    } catch {
-      setError("Failed to fetch quiz data.");
-    }
-  };
-
   useEffect(() => {
-    fetchUserData();
+    fetchUserDataAndQuiz();
   }, []);
-
-  useEffect(() => {
-    if (userData?._id) fetchQuizResults(userData._id);
-  }, [userData]);
 
   const handleUploadCity = async (e) => {
     e.preventDefault();
     if (!newCityName.trim()) return;
+
     setIsUploading(true);
     setUploadMessage({ type: "", text: "" });
+
     try {
       const result = await simulateUploadCity(newCityName.trim());
       setUploadMessage({ type: "success", text: result.message });
       setNewCityName("");
       setTimeout(() => setIsUploadModalOpen(false), 2000);
-    } catch {
+    } catch (err) {
       setUploadMessage({ type: "error", text: "Upload failed. Please try again." });
     } finally {
       setIsUploading(false);
     }
   };
 
-  if (loading)
+  if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen bg-indigo-50">
         <div className="text-center text-gray-700 p-8">
@@ -108,8 +111,9 @@ const Admin = () => {
         </div>
       </div>
     );
+  }
 
-  if (error)
+  if (error) {
     return (
       <div className="flex justify-center items-center min-h-screen bg-red-50">
         <div className="text-red-700 text-xl p-8 bg-white rounded-xl shadow-lg border-t-4 border-red-500">
@@ -117,10 +121,10 @@ const Admin = () => {
         </div>
       </div>
     );
+  }
 
   const primaryIndigo = "rgba(99, 102, 241, 1)";
   const secondaryPink = "rgba(236, 72, 153, 1)";
-  const tertiaryTeal = "rgba(20, 184, 166, 1)";
 
   const lineData = {
     labels: quizResults.map((q, i) => `Quiz ${i + 1}`),
@@ -134,19 +138,6 @@ const Admin = () => {
         tension: 0.4,
         pointRadius: 5,
         pointHoverRadius: 7,
-      },
-    ],
-  };
-
-  const pieData = {
-    labels: ["History", "Culture", "Others"],
-    datasets: [
-      {
-        label: "Performance Categories",
-        data: [40, 30, 30],
-        backgroundColor: [primaryIndigo, secondaryPink, tertiaryTeal],
-        borderWidth: 2,
-        borderColor: "#ffffff",
       },
     ],
   };
@@ -168,6 +159,7 @@ const Admin = () => {
     ],
   };
 
+  // Upload modal component
   const UploadCityModal = () => (
     <div className="fixed inset-0 bg-gray-900 bg-opacity-70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
       <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-2xl w-full max-w-lg transform transition-all duration-300 scale-100 border-t-4 border-teal-500">
@@ -212,11 +204,10 @@ const Admin = () => {
 
           {uploadMessage.text && (
             <div
-              className={`flex items-center p-3 rounded-lg ${
-                uploadMessage.type === "success"
+              className={`flex items-center p-3 rounded-lg ${uploadMessage.type === "success"
                   ? "bg-teal-50 text-teal-800 border border-teal-300"
                   : "bg-red-50 text-red-800 border border-red-300"
-              }`}
+                }`}
             >
               {uploadMessage.type === "success" ? (
                 <CheckCircle className="w-5 h-5 mr-2" />
@@ -257,12 +248,14 @@ const Admin = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-purple-100 p-4 sm:p-8 lg:p-12 text-gray-800 font-['Inter']">
       {isUploadModalOpen && <UploadCityModal />}
+
       <div className="max-w-7xl mx-auto">
         <h1 className="text-4xl sm:text-5xl font-extrabold mb-10 text-indigo-900 tracking-tight border-b-4 border-pink-300 pb-2">
-          Dashboard: {userData?.name || "Explorer"}
+          Dashboard: {userData.name || "Explorer"}
         </h1>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+
           <div className="lg:col-span-1 bg-white p-6 sm:p-8 rounded-3xl shadow-2xl border-t-8 border-indigo-500 h-fit">
             <h2 className="text-2xl font-bold mb-6 text-indigo-700 flex items-center">
               <MapPin className="w-5 h-5 mr-2 text-pink-500" /> User Profile
@@ -282,21 +275,13 @@ const Admin = () => {
                 ].map((field, index) => (
                   <div key={index}>
                     <label className="text-sm font-medium text-gray-500 block mb-1">{field.label}</label>
-                    <input
-                      className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl font-medium text-gray-800 shadow-inner focus:ring-indigo-500"
-                      value={field.value}
-                      readOnly
-                    />
+                    <input className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl font-medium text-gray-800 shadow-inner focus:ring-indigo-500" value={field.value} readOnly />
                   </div>
                 ))}
 
                 <div>
                   <label className="text-sm font-medium text-gray-500 block mb-1">Bio</label>
-                  <textarea
-                    className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl shadow-inner focus:ring-indigo-500"
-                    rows={2}
-                    defaultValue="Traveler & History enthusiast."
-                  />
+                  <textarea className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl shadow-inner focus:ring-indigo-500" rows={2} defaultValue="Traveler & History enthusiast." />
                 </div>
               </div>
 
@@ -311,16 +296,13 @@ const Admin = () => {
           </div>
 
           <div className="lg:col-span-2 xl:col-span-3 space-y-8">
+
             <div className="bg-white p-6 sm:p-8 rounded-3xl shadow-2xl border border-gray-100">
               <h2 className="text-2xl font-bold mb-6 text-indigo-700">Quiz Performance Over Time</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="grid grid-cols-1 gap-8">
                 <div className="p-4 border border-gray-100 rounded-2xl shadow-inner transition hover:shadow-lg">
                   <h3 className="text-lg font-semibold mb-3 text-gray-700">Recent Scores</h3>
                   <Line data={lineData} options={{ maintainAspectRatio: true, responsive: true }} />
-                </div>
-                <div className="p-4 border border-gray-100 rounded-2xl shadow-inner transition hover:shadow-lg">
-                  <h3 className="text-lg font-semibold mb-3 text-gray-700">Category Breakdown</h3>
-                  <Pie data={pieData} options={{ maintainAspectRatio: true, responsive: true }} />
                 </div>
               </div>
             </div>
@@ -328,26 +310,25 @@ const Admin = () => {
             <div className="bg-white p-6 sm:p-8 rounded-3xl shadow-2xl border border-gray-100">
               <h2 className="text-2xl font-bold mb-6 text-indigo-700">City Exploration Summary</h2>
               <div className="flex flex-col xl:flex-row items-center gap-8">
+
                 <div className="flex flex-col items-center justify-center p-8 bg-pink-50 rounded-2xl shadow-inner w-full xl:w-1/3 min-h-[180px] border-l-4 border-pink-500">
-                  <span className="text-6xl font-black text-pink-600 drop-shadow-md">
-                    {userData.visitedCities?.length || 0}
-                  </span>
-                  <span className="text-lg font-extrabold text-pink-800 mt-3 text-center tracking-wide">
-                    Cities Explored
-                  </span>
+                  <span className="text-6xl font-black text-pink-600 drop-shadow-md">{userData.visitedCities?.length || 0}</span>
+                  <span className="text-lg font-extrabold text-pink-800 mt-3 text-center tracking-wide">Cities Explored</span>
                   <p className="text-xs text-gray-500 mt-1">A growing virtual journey.</p>
                 </div>
+
                 <div className="w-full xl:w-2/3 p-4 border border-gray-100 rounded-2xl shadow-inner transition hover:shadow-lg">
                   <h3 className="text-lg font-semibold mb-3 text-gray-700">Recent Visit Count</h3>
                   <Bar data={barData} options={{ maintainAspectRatio: true, responsive: true }} />
                 </div>
               </div>
             </div>
+
           </div>
         </div>
       </div>
     </div>
   );
-};
+}
 
 export default Admin;

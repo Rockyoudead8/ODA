@@ -15,10 +15,23 @@ function CityInfo({ city }) {
     const fetchCityData = async () => {
       setLoading(true);
       setFetchError(null);
-      setData(null);
-      setResult(null);
-      setUserAnswers({});
-      setShowExplanations({});
+
+      const userId = localStorage.getItem("userId");
+      if (!userId) {
+        setFetchError("User not logged in");
+        setLoading(false);
+        return;
+      }
+
+      const cacheKey = `cityInfo_${userId}_${city}`;
+      const cached = localStorage.getItem(cacheKey);
+
+      if (cached) {
+        // Load cached data
+        setData(JSON.parse(cached));
+        setLoading(false);
+        return;
+      }
 
       try {
         const res = await fetch("http://localhost:8000/api/generate_info", {
@@ -29,12 +42,16 @@ function CityInfo({ city }) {
 
         const result = await res.json();
         if (!res.ok) throw new Error(result.error || "Server failed to generate info.");
-        
+
         if (!result.quizQuestions || result.quizQuestions.length === 0) {
-            throw new Error("Quiz data is incomplete. Please try reloading.");
+          throw new Error("Quiz data is incomplete. Please try reloading.");
         }
-        
+
         setData(result);
+
+        // Cache for future use
+        localStorage.setItem(cacheKey, JSON.stringify(result));
+
       } catch (err) {
         console.error("Fetch/Parsing Error:", err.message);
         setFetchError(err.message);
@@ -56,13 +73,13 @@ function CityInfo({ city }) {
 
   const handleSubmitQuiz = async () => {
     if (!data?.quizQuestions || submitting) return;
-    
+
     const totalQuestions = data.quizQuestions.length;
     if (Object.keys(userAnswers).length < totalQuestions) {
-        setFetchError(`Please answer all ${totalQuestions} questions before submitting.`);
-        return;
+      setFetchError(`Please answer all ${totalQuestions} questions before submitting.`);
+      return;
     }
-    
+
     setSubmitting(true);
     setResult(null);
     setFetchError(null);
@@ -71,7 +88,7 @@ function CityInfo({ city }) {
     const correctAnswers = data.quizQuestions.map(q => q.correctAnswer);
 
     try {
-      const userId = localStorage.getItem("userId"); 
+      const userId = localStorage.getItem("userId");
       if (!userId) throw new Error("User ID not found in localStorage");
 
       const res = await fetch("http://localhost:8000/api/submit_quiz", {
@@ -89,6 +106,7 @@ function CityInfo({ city }) {
       if (!res.ok) throw new Error(resultData.error || "Submission failed.");
 
       setResult(resultData);
+
     } catch (err) {
       console.error("Submission Error:", err.message);
       setResult({ error: err.message });
@@ -164,7 +182,7 @@ function CityInfo({ city }) {
                               value={opt}
                               checked={userAnswer === opt}
                               onChange={() => handleAnswerSelect(i, opt)}
-                              disabled={!!result} // disable after submit
+                              disabled={!!result}
                               className="mr-2 h-3 w-3 text-pink-600 border-gray-300 cursor-pointer focus:ring-pink-500"
                             />
                             <label

@@ -1,18 +1,18 @@
-import React, { useState } from "react";
-import { Link, useNavigate } from 'react-router-dom';
-import { User, Lock, MapPin } from "lucide-react";
-
+import React, { useState, useContext } from "react";
+import { MapPin } from "lucide-react";
+import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { UserContext } from "../UserContext";
 
 function LoginPage() {
+  const { setUser } = useContext(UserContext); // access global setUser
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const [error,setError] = useState("");
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError("");
-
     try {
       const response = await fetch("http://localhost:8000/api/auth/login", {
         method: "POST",
@@ -20,23 +20,22 @@ function LoginPage() {
         credentials: "include",
         body: JSON.stringify({ email, password }),
       });
-
       const data = await response.json();
       if (response.ok) {
-        navigate('/Check');
+        setUser(data.user); // update global state
+        navigate("/Hero");
       } else {
-        setError("Login failed. Please try again.");
+        alert("Login failed");
       }
     } catch (err) {
-      console.error("Login error:", err);
-      setError("Something went wrong. Please try again.");
+      console.error(err);
     }
   };
+
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 to-purple-100 p-4">
       <div className="bg-white shadow-2xl rounded-xl p-6 sm:p-10 w-full max-w-md border-t-8 border-pink-500 transform transition duration-500 hover:shadow-pink-300/50">
-
         <div className="flex flex-col items-center mb-6 sm:mb-8">
           <MapPin className="w-10 h-10 text-pink-500 mb-2" />
           <h2 className="text-2xl sm:text-3xl font-extrabold text-gray-800 tracking-tight">
@@ -45,7 +44,6 @@ function LoginPage() {
           <p className="text-sm sm:text-base text-gray-500 mt-1">Sign in to continue your virtual walk.</p>
         </div>
 
-
         {error && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative mb-4 text-sm">
             {error}
@@ -53,10 +51,7 @@ function LoginPage() {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-5 sm:space-y-6">
-
-
           <div className="relative">
-            <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input
               type="text"
               placeholder="     Email or Username"
@@ -67,9 +62,7 @@ function LoginPage() {
             />
           </div>
 
-
           <div className="relative">
-            <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input
               type="password"
               placeholder="     Password"
@@ -80,13 +73,11 @@ function LoginPage() {
             />
           </div>
 
-
           <div className="flex justify-between items-center">
             <a href="/forgot-password" className="text-sm text-indigo-500 hover:text-pink-500 hover:underline transition">
               Forgot Password?
             </a>
           </div>
-
 
           <button
             type="submit"
@@ -95,7 +86,6 @@ function LoginPage() {
             Login
           </button>
         </form>
-
 
         <p className="text-center text-sm mt-6 text-gray-600">
           New user?{" "}

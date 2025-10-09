@@ -1,3 +1,4 @@
+// from github
 const express = require("express");
 const router = express.Router();
 const QuizResult = require("../models/QuizResult");
@@ -17,9 +18,11 @@ router.post("/", async (req, res) => {
     let score = 0;
     const feedback = [];
 
+    const normalize = str => str?.toString().trim().toLowerCase().replace(/\s+/g, " ") || "";
+
     correctAnswers.forEach((correct, i) => {
-      const user = (userAnswers[i] || "").trim().toLowerCase();
-      const answer = (correct || "").trim().toLowerCase();
+      const user = normalize(userAnswers[i]);
+      const answer = normalize(correct);
 
       const isCorrect = user === answer;
       if (isCorrect) score++;
@@ -32,7 +35,6 @@ router.post("/", async (req, res) => {
       });
     });
 
-
     const previousResults = await QuizResult.find({ userId, city });
     const previousTotal = previousResults.reduce((acc, r) => acc + (r.score || 0), 0);
 
@@ -44,7 +46,7 @@ router.post("/", async (req, res) => {
       userAnswers,
       correctAnswers,
       score,
-      total: totalScore, 
+      total: totalScore,
       date: new Date(),
     });
 
@@ -61,7 +63,6 @@ router.post("/", async (req, res) => {
     res.status(500).json({ error: "Failed to submit quiz" });
   }
 });
-
 router.post("/get_quiz", async (req, res) => {
   try {
     const { userId } = req.body;

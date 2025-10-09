@@ -1,6 +1,7 @@
-import React, { useState } from "react";
-import { Link, useNavigate } from 'react-router-dom';
-import { User, Lock, MapPin, Mail, CheckCircle } from "lucide-react";
+import React, { useState, useContext } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { MapPin, CheckCircle } from "lucide-react";
+import { UserContext } from "../UserContext"; 
 
 function SignupPage() {
   const [name, setName] = useState("");
@@ -9,7 +10,9 @@ function SignupPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  
   const navigate = useNavigate();
+  const { setUser } = useContext(UserContext);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -33,15 +36,14 @@ function SignupPage() {
       console.log(data);
 
       if (response.ok) {
+        setUser(data.user); // Update global user context immediately
         setSuccess("Account created successfully! Redirecting...");
-        localStorage.setItem("userId", data.user._id);
-        
-        setTimeout(() => {
-          navigate("/Check");
-        }, 1000);
 
+        setTimeout(() => {
+          navigate("/Check"); 
+        }, 1000);
       } else {
-        setError(data.error || "Failed to create account.");
+        setError(data.message || "Failed to create account.");
       }
     } catch (err) {
       console.error("Signup error:", err);
@@ -55,21 +57,18 @@ function SignupPage() {
         
         <div className="flex flex-col items-center mb-6 sm:mb-8">
           <MapPin className="w-10 h-10 text-pink-500 mb-2" />
-         
           <h2 className="text-2xl sm:text-3xl font-extrabold text-gray-800 tracking-tight">
             Create Your Account
           </h2>
           <p className="text-sm sm:text-base text-gray-500 mt-1">Join the virtual walk community!</p>
         </div>
 
-      
         {error && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative mb-4 text-sm">
             {error}
           </div>
         )}
 
-   
         {success && (
           <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg relative mb-4 text-sm flex items-center">
             <CheckCircle className="w-5 h-5 mr-2" />
@@ -77,25 +76,19 @@ function SignupPage() {
           </div>
         )}
 
-      
         <form onSubmit={handleSubmit} className="space-y-5 sm:space-y-6">
-          
-       
           <div className="relative">
-            <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input
               type="text"
               placeholder="    Full Name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              
               className="w-full p-3 sm:p-4 pl-12 border border-indigo-200 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-pink-400 transition"
               required
             />
           </div>
 
           <div className="relative">
-            <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input
               type="email"
               placeholder="    Email"
@@ -106,9 +99,7 @@ function SignupPage() {
             />
           </div>
 
-        
           <div className="relative">
-            <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input
               type="password"
               placeholder="    Password"
@@ -119,9 +110,7 @@ function SignupPage() {
             />
           </div>
 
-         
           <div className="relative">
-            <CheckCircle className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input
               type="password"
               placeholder="     Confirm Password"
@@ -132,7 +121,6 @@ function SignupPage() {
             />
           </div>
 
-     
           <button
             type="submit"
             className="w-full bg-pink-500 text-white font-bold p-3 sm:p-4 rounded-lg hover:bg-pink-600 transition duration-300 shadow-md shadow-pink-300 hover:shadow-lg"

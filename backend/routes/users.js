@@ -177,12 +177,33 @@ router.get("/logout", (req, res, next) => {
 });
 
 //check if user is logged in route
+
+// lucky code old
+// router.get("/status", (req, res) => {
+//   if (req.isAuthenticated()) {
+//     return res.status(200).json({ message: "User is logged in", user: req.user });
+//   }
+//   // console.log("Not Authenticated");
+//   res.status(401).json({ message: "User is not logged in" });
+// });
+// lucky code old
+
+// new code for status
 router.get("/status", (req, res) => {
+  // Disable browser & proxy caching completely
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+  res.set('Pragma', 'no-cache');
+  res.set('Expires', '0');
+
   if (req.isAuthenticated()) {
-    return res.status(200).json({ message: "User is logged in", user: req.user });
+    return res.status(200).json({
+      message: "User is logged in",
+      user: req.user,
+    });
   }
-  // console.log("Not Authenticated");
+
   res.status(401).json({ message: "User is not logged in" });
 });
+// new code for status
 
 module.exports = router;

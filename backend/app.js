@@ -41,11 +41,18 @@ app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
 
 // session config
+// session config (UPDATED)
 app.use(session({
+  secret: process.env.SESSION_SECRET || "adhakbaglgagfgfdf",
   resave: false,
   saveUninitialized: false,
-  secret: "adhakbaglgagfgfdf",
+  cookie: {
+    httpOnly: true,
+    secure: false, // set true if using https
+    sameSite: "lax", // important for localhost
+  }
 }));
+
 
 // body parser middleware
 app.use(express.json());
@@ -66,7 +73,7 @@ app.use(logger('dev'));
 // routes
 app.use('/', indexRouter);
 
-app.use('/api', listingsRouter);
+app.use('/api/', listingsRouter);
 app.use('/api/auth', usersRouter); // user auth routes 
 
 app.use('/api/toggle-visit', usersRouter);
@@ -74,7 +81,7 @@ app.use('/api/toggle-visit', usersRouter);
 // app.use(isLoggedIn); // Middleware to check if user is logged in for all routes below this line 
 
 app.use('/api/generate-sound', generateSoundRoute);
-app.use('/api/comments', commentsRoute);
+app.use('/api', commentsRoute);
 app.use('/api/generate_info', infoRouter);
 app.use('/api/submit_quiz', submitRouter);
 app.use("/api/upload", uploadRoutes);
