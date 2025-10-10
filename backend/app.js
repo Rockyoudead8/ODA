@@ -20,6 +20,8 @@ const userModel = require("./models/users");
 const cors = require('cors');
 var isLoggedIn = require('./middlewares/mw');
 var app = express();
+const GoogleStrategy = require("passport-google-oauth20").Strategy;
+// require("./auth");
 
 app.use(cors({
   origin: 'http://localhost:3000', // React's port
@@ -48,7 +50,8 @@ app.use(session({
   saveUninitialized: false,
   cookie: {
     httpOnly: true,
-    secure: false, // set true if using https
+    // secure: false, // set true if using https
+    secure:true,
     sameSite: "lax", // important for localhost
   }
 }));
@@ -63,9 +66,57 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Passport config
 app.use(passport.initialize());
 app.use(passport.session());
-passport.serializeUser(userModel.serializeUser());
-passport.deserializeUser(userModel.deserializeUser());
-passport.use(userModel.createStrategy());
+
+passport.use(userModel.createStrategy()); // Local strategy (handled by passport-local-mongoose)
+passport.serializeUser((user,done) => done(null,user.id));
+passport.deserializeUser((id,done)=>{
+    userModel.findById(id,(err,user) => done(err,user));
+});
+
+passport.use(new GoogleStrategy( {
+    clientID: process.env.GOOGLE_CLIENT_ID,
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    callbackURL: process.env.GOOGLE_CALLBACK_URL,
+    // passReqToCallback : true
+  },
+
+  async function(accessToken, refreshToken, profile, done) { 
+    
+    try{    let user = await userModel.findOne({
+          $or: [
+            { googleId: profile.id },
+            { email: profile.emails[0].value }
+          ]
+        });
+
+
+    if(!user){
+      const newUser = new userModel({
+        googleId: profile.id,
+        email: profile.emails[0].value,
+        name: profile.displayName,
+      })
+
+      await newUser.save();
+      return done(null,newUser);
+    }
+    else{
+            if (!user.googleId) {
+                user.googleId = profile.id;
+                await user.save();
+            }
+            return done(null, user);
+    }
+  }
+  catch(err){
+    console.log("error occured");
+    return done(err,null);
+  }
+
+  }
+
+));
+
 
 //logger
 app.use(logger('dev'));

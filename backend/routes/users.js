@@ -96,4 +96,72 @@ router.get("/status", (req, res) => {
   res.status(401).json({ message: "User is not logged in" });
 });
 
+//redirects the user to google oauth 
+router.get('/google',passport.authenticate("google",{scope: ["profile","email"]}));
+
+//google redirects the user to this url 
+// router.get("/google/callback", (req,res)=>{
+
+//     try{ 
+
+//       passport.authenticate("google", (err, user, info) =>{
+//       if (err) {
+//         return res.status(500).json({ message: "Server error" });
+//       }
+
+//       if (!user) {
+//         return res.status(401).json({ message: "google login failed" });
+//       }
+
+//       req.login(user, (err) => {
+//         if (err) {
+//           return res.status(500).json({ message: "Login failed" });
+//         }
+
+//         res.status(200).json({ message: "Google login/signup successful", user });
+//       });
+
+
+//     }) }
+//     catch{
+//       console.error(err);
+//       res.status(500).json({ message: err.message });
+//     }
+
+//   });
+
+  router.get("/google/callback", (req, res, next) => {
+    // next has to be used even if we arent using it any where
+
+  try {
+    passport.authenticate("google", (err, user, info) => {
+      if (err) {
+        console.log("error with server");
+        return res.status(500).json({ message: "Server error" });
+      }
+
+      if (!user) {
+        console.log("Google login failed")
+        return res.status(401).json({ message: "Google login failed" });
+      }
+
+      req.login(user, (err) => {
+        if (err) {
+          console.log("Login failed")
+          return res.status(500).json({ message: "Login failed" });
+        }
+        
+        console.log("Google login/signup successful")
+        res.status(200).json({ message: "Google login/signup successful", user });
+      });
+
+    })(req, res, next);
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: err.message });
+  }
+});
+
+
 module.exports = router;

@@ -40,6 +40,7 @@ exports.handleLogin = (req, res) => {
     if(!req.isAuthenticated()){
 
     passport.authenticate('local', (err, user, info) => {
+      
       if (err) {
         return res.status(500).json({ message: "Server error" });
       }
