@@ -10,7 +10,7 @@ ChartJS.register(LineElement, BarElement, CategoryScale, LinearScale, PointEleme
 const simulateUploadCity = (cityName) => new Promise((resolve) => setTimeout(() => resolve({ success: true, message: `${cityName} uploaded successfully!` }), 2000));
 
 const StatCard = ({ icon, title, value, color, detail }) => (
-  <motion.div 
+  <motion.div
     className={`bg-white p-6 rounded-2xl shadow-lg border-l-4 ${color}`}
     whileHover={{ scale: 1.05, boxShadow: "0px 10px 20px rgba(0,0,0,0.1)" }}
     transition={{ type: "spring", stiffness: 300 }}
@@ -41,23 +41,23 @@ const Admin = () => {
 
   useEffect(() => {
     const fetchInitialData = async () => {
-      const userId = localStorage.getItem("userId");
-      if (!userId) {
-        setError("User ID not found");
-        setLoading(false);
-        return;
-      }
       try {
-        const [userRes, quizRes] = await Promise.all([
-          fetch("http://localhost:8000/api/auth/get_user", { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ userId }) }),
-          fetch("http://localhost:8000/api/submit_quiz/get_quiz", { method: "POST",credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ userId }) }),
-        ]);
-
+        // get logged-in user info from session
+        const userRes = await fetch("http://localhost:8000/api/auth/get_user", {
+          method: "GET", // session-based auth
+          credentials: "include",
+        });
         const userData = await userRes.json();
-        const quizData = await quizRes.json();
+        if (userRes.ok) setUserData(userData.user);
+        else setError(userData.error || "User not found");
 
-        if (userRes.ok) setUserData(userData.user); else setError(userData.error || "User not found");
-        if (quizRes.ok) setQuizResults(quizData || []); else console.warn("Quiz fetch error:", quizData.error);
+        // get quiz results for logged-in user
+        const quizRes = await fetch("http://localhost:8000/api/submit_quiz/get_quiz", {
+          method: "GET", // adjust backend to use session user
+          credentials: "include",
+        });
+        const quizData = await quizRes.json();
+        if (quizRes.ok) setQuizResults(quizData || []);
       } catch (err) {
         console.error("Unknown error:", err);
         setError("Something went wrong.");
@@ -65,8 +65,10 @@ const Admin = () => {
         setLoading(false);
       }
     };
+
     fetchInitialData();
   }, []);
+
 
   useEffect(() => {
     const fetchCityCoords = async () => {
@@ -137,19 +139,19 @@ const Admin = () => {
     acc[city].count++;
     return acc;
   }, {});
-  
+
   const totalQuizzes = quizResults.length;
   const overallAvgScore = totalQuizzes > 0 ? (quizResults.reduce((sum, q) => sum + q.score, 0) / totalQuizzes).toFixed(1) : 0;
-  
+
   let bestCity = "N/A";
   if (Object.keys(cityPerformance).length > 0) {
-    bestCity = Object.keys(cityPerformance).reduce((a, b) => 
+    bestCity = Object.keys(cityPerformance).reduce((a, b) =>
       (cityPerformance[a].totalScore / cityPerformance[a].count) > (cityPerformance[b].totalScore / cityPerformance[b].count) ? a : b
     );
   }
 
   const lineData = { labels: quizResults.map((q, i) => `Quiz ${i + 1}`), datasets: [{ label: "Score", data: quizResults.map(q => q.score), fill: true, backgroundColor: 'rgba(99, 102, 241, 0.2)', borderColor: 'rgba(99, 102, 241, 1)', tension: 0.4 }] };
-  
+
   const pieData = {
     labels: Object.keys(cityPerformance),
     datasets: [{
@@ -160,7 +162,7 @@ const Admin = () => {
       borderWidth: 2,
     }],
   };
-  
+
   const UploadCityModal = () => (
     <div className="fixed inset-0 bg-gray-900 bg-opacity-70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
       <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-2xl w-full max-w-lg transform transition-all duration-300 scale-100 border-t-4 border-teal-500">
@@ -233,7 +235,7 @@ const Admin = () => {
       </div>
     </div>
   );
-  
+
   return (
     <div className="min-h-screen bg-gray-50 p-4 sm:p-8 lg:p-12 text-gray-800 font-sans">
       {isUploadModalOpen && <UploadCityModal />}
@@ -244,7 +246,7 @@ const Admin = () => {
           </h1>
         </motion.div>
         <div className="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-          <motion.div 
+          <motion.div
             className="lg:col-span-1 bg-white p-6 sm:p-8 rounded-2xl shadow-xl h-fit"
             initial={{ opacity: 0, x: -50 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5, delay: 0.2 }}
           >
@@ -273,7 +275,7 @@ const Admin = () => {
               </button>
             </div>
           </motion.div>
-          <motion.div 
+          <motion.div
             className="lg:col-span-2 xl:col-span-3 space-y-8"
             initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.4 }}
           >
@@ -292,12 +294,12 @@ const Admin = () => {
                 <div className="p-4 bg-gray-50 rounded-xl">
                   <h3 className="text-lg font-semibold mb-3 text-gray-700 text-center">Average Score by City</h3>
                   {pieData.labels.length > 0 ? (
-                     <div className="max-w-[350px] mx-auto"><Pie data={pieData} options={{ maintainAspectRatio: true, responsive: true }} /></div>
+                    <div className="max-w-[350px] mx-auto"><Pie data={pieData} options={{ maintainAspectRatio: true, responsive: true }} /></div>
                   ) : (<p className="text-center text-gray-500 h-full flex items-center justify-center">No quiz data yet.</p>)}
                 </div>
               </div>
             </div>
-            
+
             <UserVisitedMap visitedCities={visitedCitiesWithCoords} />
 
           </motion.div>

@@ -54,7 +54,7 @@ router.post("/", async (req, res) => {
 });
 
 // route to get user info
-router.post("/get_user", c.handleGetUser );
+router.get("/get_user", c.handleGetUser );
 
 // login route
 router.post('/login', c.handleLogin );
