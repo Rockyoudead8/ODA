@@ -6,11 +6,19 @@ function ProtectedRoute({ children }) {
   const { user, loading } = useContext(UserContext);
 
   if (loading) {
-    return null; 
+    // Render nothing or a loader while checking auth status
+    return null;
   }
 
+  // If there's no user, redirect and pass a message in the state
   if (!user) {
-    return <Navigate to="/" replace />;
+    return (
+      <Navigate
+        to="/"
+        replace
+        state={{ message: "You must log in to access that feature." }}
+      />
+    );
   }
 
   return children;

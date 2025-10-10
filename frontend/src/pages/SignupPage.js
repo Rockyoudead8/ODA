@@ -14,6 +14,9 @@ function SignupPage() {
   const navigate = useNavigate();
   const { setUser } = useContext(UserContext);
 
+  const handleGoogleLogin = () => {
+    window.location.href = "http://localhost:8000/api/auth/google";
+  };
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
@@ -126,6 +129,20 @@ function SignupPage() {
             className="w-full bg-pink-500 text-white font-bold p-3 sm:p-4 rounded-lg hover:bg-pink-600 transition duration-300 shadow-md shadow-pink-300 hover:shadow-lg"
           >
             Sign Up
+          </button>
+
+          {/* 🟢 Signup with Google */}
+          <button
+            type="button"
+            onClick={handleGoogleLogin}
+            className="w-full flex items-center justify-center bg-white border border-gray-300 text-gray-700 font-semibold p-3 sm:p-4 rounded-lg hover:bg-gray-50 transition duration-300 shadow-md hover:shadow-lg mt-2"
+          >
+            <img
+              src="https://developers.google.com/identity/images/g-logo.png"
+              alt="Google"
+              className="w-5 h-5 mr-2"
+            />
+            Signup with Google
           </button>
         </form>
 

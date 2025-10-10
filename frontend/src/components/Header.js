@@ -2,10 +2,10 @@ import React, { useState, useContext } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { UserContext } from "../UserContext";
 import { Search, User, LogIn, UserPlus, MapPin, Menu, X, LogOut } from "lucide-react";
-
+import ThemeToggle from "../components/ThemeToggle";
 function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { user, setUser } = useContext(UserContext); // use global user
+  const { user, setUser } = useContext(UserContext); 
   const navigate = useNavigate();
 
   const handleLogout = async () => {
@@ -44,6 +44,8 @@ function Header() {
             <span className="font-sans">शहरनामा  "Shaharnaama"</span>
           </Link>
         </div>
+        
+        
 
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center gap-4 lg:gap-8 text-gray-700 font-semibold">
@@ -73,6 +75,7 @@ function Header() {
             )
           )}
         </nav>
+        <ThemeToggle/>
 
         {/* Mobile Menu Button */}
         <button 
@@ -121,6 +124,7 @@ function Header() {
             )
           )}
         </nav>
+          
       </div>
     </header>
   );

@@ -9,8 +9,7 @@ function Map() {
   const [topCities, setTopCities] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // NOTE: This API key is public and should be stored securely in an environment variable in a real application.
-  const GOOGLE_MAPS_API_KEY = "AIzaSyAIaDnegHiQN79bVUoTPW_sDW-iVipRF1M"; 
+  const GOOGLE_MAPS_API_KEY = process.env.REACT_APP_GOOGLE_MAPS_API_KEY; 
 
   const containerStyle = {
     width: '100%',

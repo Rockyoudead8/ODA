@@ -11,6 +11,7 @@ var submitRouter = require('./routes/submitQuiz');
 var usersRouter = require('./routes/users');
 var uploadRoutes = require('./routes/upload');
 var commentsRoute = require('./routes/comments');
+var geminiRoute = require('./routes/geminiRoute');
 var QuizRouter = require('./routes/QuizResult');
 const generateSoundRoute = require('./routes/generateSound');
 var listingsRouter = require('./routes/listings');
@@ -139,11 +140,13 @@ app.use('/api/toggle-visit', usersRouter);
 // app.use(isLoggedIn); // Middleware to check if user is logged in for all routes below this line 
 
 app.use('/api/generate-sound', generateSoundRoute);
+app.use('/api/get_visits',usersRouter);
 app.use('/api', commentsRoute);
 app.use('/api/generate_info', infoRouter);
 app.use('/api/submit_quiz', submitRouter);
 app.use("/api/upload", uploadRoutes);
 app.use('/api/leaderboard', QuizRouter);
+app.use('/api/geocode-cities',geminiRoute);
 
 
 

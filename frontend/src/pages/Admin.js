@@ -1,41 +1,37 @@
-// changed from github main
 import React, { useEffect, useState } from "react";
-import { Line, Bar } from "react-chartjs-2";
-import {
-  Chart as ChartJS,
-  LineElement,
-  BarElement,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  ArcElement,
-  Tooltip,
-  Legend,
-} from "chart.js";
-import { MapPin, UploadCloud, Loader2, X, CheckCircle } from "lucide-react";
+import { Line, Pie } from "react-chartjs-2";
+import { Chart as ChartJS, LineElement, BarElement, CategoryScale, LinearScale, PointElement, ArcElement, Tooltip, Legend } from "chart.js";
+import { MapPin, UploadCloud, Loader2, X, CheckCircle, Award, Target, BookOpen } from "lucide-react";
+import { motion } from "framer-motion";
+import UserVisitedMap from "../components/UserVisitedMap";
 
-ChartJS.register(
-  LineElement,
-  BarElement,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  ArcElement,
-  Tooltip,
-  Legend
+ChartJS.register(LineElement, BarElement, CategoryScale, LinearScale, PointElement, ArcElement, Tooltip, Legend);
+
+const simulateUploadCity = (cityName) => new Promise((resolve) => setTimeout(() => resolve({ success: true, message: `${cityName} uploaded successfully!` }), 2000));
+
+const StatCard = ({ icon, title, value, color, detail }) => (
+  <motion.div 
+    className={`bg-white p-6 rounded-2xl shadow-lg border-l-4 ${color}`}
+    whileHover={{ scale: 1.05, boxShadow: "0px 10px 20px rgba(0,0,0,0.1)" }}
+    transition={{ type: "spring", stiffness: 300 }}
+  >
+    <div className="flex items-center gap-4">
+      <div className={`p-3 rounded-full bg-opacity-10 ${color.replace('border-', 'bg-').replace('-500', '-100')}`}>
+        {icon}
+      </div>
+      <div>
+        <p className="text-sm font-medium text-gray-500">{title}</p>
+        <p className="text-2xl font-bold text-gray-800">{value}</p>
+        {detail && <p className="text-xs text-gray-400">{detail}</p>}
+      </div>
+    </div>
+  </motion.div>
 );
-
-const simulateUploadCity = (cityName) => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve({ success: true, message: `${cityName} uploaded successfully for review!` });
-    }, 2000);
-  });
-};
 
 const Admin = () => {
   const [userData, setUserData] = useState(null);
   const [quizResults, setQuizResults] = useState([]);
+  const [visitedCitiesWithCoords, setVisitedCitiesWithCoords] = useState([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
@@ -43,60 +39,73 @@ const Admin = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadMessage, setUploadMessage] = useState({ type: "", text: "" });
 
-  const fetchUserDataAndQuiz = async () => {
-    const userId = typeof localStorage !== "undefined" ? localStorage.getItem("userId") : null;
-    if (!userId) {
-      setError("User ID not found");
-      setLoading(false);
-      return;
-    }
+  useEffect(() => {
+    const fetchInitialData = async () => {
+      const userId = localStorage.getItem("userId");
+      if (!userId) {
+        setError("User ID not found");
+        setLoading(false);
+        return;
+      }
+      try {
+        const [userRes, quizRes] = await Promise.all([
+          fetch("http://localhost:8000/api/auth/get_user", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ userId }) }),
+          fetch("http://localhost:8000/api/submit_quiz/get_quiz", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ userId }) }),
+        ]);
 
-    try {
-      // Fetch user data
-      const response = await fetch("http://localhost:8000/api/auth/get_user", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId }),
-      });
-      const data = await response.json();
-      if (response.ok) setUserData(data.user);
-      else setError(data.error || "User not found");
+        const userData = await userRes.json();
+        const quizData = await quizRes.json();
 
-      // Fetch quiz results
-      const quizRes = await fetch("http://localhost:8000/api/submit_quiz/get_quiz", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId }),
-      });
-      const quizData = await quizRes.json();
-      if (quizRes.ok) setQuizResults(quizData || []);
-      else console.warn("Quiz fetch error:", quizData.error);
-    } catch (err) {
-      console.error("Unknown error:", err);
-      setError("Something went wrong. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
+        if (userRes.ok) setUserData(userData.user); else setError(userData.error || "User not found");
+        if (quizRes.ok) setQuizResults(quizData || []); else console.warn("Quiz fetch error:", quizData.error);
+      } catch (err) {
+        console.error("Unknown error:", err);
+        setError("Something went wrong.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchInitialData();
+  }, []);
 
   useEffect(() => {
-    fetchUserDataAndQuiz();
-  }, []);
+    const fetchCityCoords = async () => {
+      if (userData?.visitedCities?.length > 0) {
+        try {
+          const res = await fetch('http://localhost:8000/api/geocode-cities', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ cities: userData.visitedCities }),
+          });
+          const coordsData = await res.json();
+          if (res.ok) {
+            setVisitedCitiesWithCoords(coordsData);
+          } else {
+            console.error("Failed to get coordinates from backend:", coordsData.error);
+          }
+        } catch (err) {
+          console.error("Failed to geocode cities with Gemini:", err);
+        }
+      }
+    };
+
+    if (userData) {
+      fetchCityCoords();
+    }
+  }, [userData]);
 
   const handleUploadCity = async (e) => {
     e.preventDefault();
     if (!newCityName.trim()) return;
-
     setIsUploading(true);
     setUploadMessage({ type: "", text: "" });
-
     try {
       const result = await simulateUploadCity(newCityName.trim());
       setUploadMessage({ type: "success", text: result.message });
       setNewCityName("");
       setTimeout(() => setIsUploadModalOpen(false), 2000);
     } catch (err) {
-      setUploadMessage({ type: "error", text: "Upload failed. Please try again." });
+      setUploadMessage({ type: "error", text: "Upload failed." });
     } finally {
       setIsUploading(false);
     }
@@ -116,50 +125,42 @@ const Admin = () => {
   if (error) {
     return (
       <div className="flex justify-center items-center min-h-screen bg-red-50">
-        <div className="text-red-700 text-xl p-8 bg-white rounded-xl shadow-lg border-t-4 border-red-500">
-          Error: {error}
-        </div>
+        <div className="text-red-700 text-xl p-8 bg-white rounded-xl shadow-lg border-t-4 border-red-500">Error: {error}</div>
       </div>
     );
   }
 
-  const primaryIndigo = "rgba(99, 102, 241, 1)";
-  const secondaryPink = "rgba(236, 72, 153, 1)";
+  const cityPerformance = quizResults.reduce((acc, result) => {
+    const { city, score } = result;
+    if (!acc[city]) acc[city] = { totalScore: 0, count: 0 };
+    acc[city].totalScore += score;
+    acc[city].count++;
+    return acc;
+  }, {});
+  
+  const totalQuizzes = quizResults.length;
+  const overallAvgScore = totalQuizzes > 0 ? (quizResults.reduce((sum, q) => sum + q.score, 0) / totalQuizzes).toFixed(1) : 0;
+  
+  let bestCity = "N/A";
+  if (Object.keys(cityPerformance).length > 0) {
+    bestCity = Object.keys(cityPerformance).reduce((a, b) => 
+      (cityPerformance[a].totalScore / cityPerformance[a].count) > (cityPerformance[b].totalScore / cityPerformance[b].count) ? a : b
+    );
+  }
 
-  const lineData = {
-    labels: quizResults.map((q, i) => `Quiz ${i + 1}`),
-    datasets: [
-      {
-        label: "Score",
-        data: quizResults.map((q) => q.score),
-        fill: true,
-        backgroundColor: primaryIndigo.replace(", 1)", ", 0.2)"),
-        borderColor: primaryIndigo,
-        tension: 0.4,
-        pointRadius: 5,
-        pointHoverRadius: 7,
-      },
-    ],
+  const lineData = { labels: quizResults.map((q, i) => `Quiz ${i + 1}`), datasets: [{ label: "Score", data: quizResults.map(q => q.score), fill: true, backgroundColor: 'rgba(99, 102, 241, 0.2)', borderColor: 'rgba(99, 102, 241, 1)', tension: 0.4 }] };
+  
+  const pieData = {
+    labels: Object.keys(cityPerformance),
+    datasets: [{
+      label: 'Average Score',
+      data: Object.keys(cityPerformance).map(city => (cityPerformance[city].totalScore / cityPerformance[city].count).toFixed(2)),
+      backgroundColor: ['rgba(99, 102, 241, 0.8)', 'rgba(236, 72, 153, 0.8)', 'rgba(52, 211, 153, 0.8)', 'rgba(251, 146, 60, 0.8)', 'rgba(168, 85, 247, 0.8)'],
+      borderColor: '#fff',
+      borderWidth: 2,
+    }],
   };
-
-  const cityNames = userData.visitedCities || [];
-  const visitCounts = cityNames.map(() => 1);
-  const barData = {
-    labels: cityNames,
-    datasets: [
-      {
-        label: "Cities Visited",
-        data: visitCounts,
-        backgroundColor: secondaryPink.replace(", 1)", ", 0.8)"),
-        borderColor: secondaryPink,
-        borderWidth: 1,
-        borderRadius: 6,
-        barThickness: 30,
-      },
-    ],
-  };
-
-  // Upload modal component
+  
   const UploadCityModal = () => (
     <div className="fixed inset-0 bg-gray-900 bg-opacity-70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
       <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-2xl w-full max-w-lg transform transition-all duration-300 scale-100 border-t-4 border-teal-500">
@@ -179,7 +180,6 @@ const Admin = () => {
             <X className="w-6 h-6" />
           </button>
         </div>
-
         <form onSubmit={handleUploadCity} className="space-y-5">
           <p className="text-gray-600">
             If your city is missing from our list, please submit it below for our team to review and add.
@@ -201,23 +201,12 @@ const Admin = () => {
               disabled={isUploading || uploadMessage.type === "success"}
             />
           </div>
-
           {uploadMessage.text && (
-            <div
-              className={`flex items-center p-3 rounded-lg ${uploadMessage.type === "success"
-                  ? "bg-teal-50 text-teal-800 border border-teal-300"
-                  : "bg-red-50 text-red-800 border border-red-300"
-                }`}
-            >
-              {uploadMessage.type === "success" ? (
-                <CheckCircle className="w-5 h-5 mr-2" />
-              ) : (
-                <X className="w-5 h-5 mr-2" />
-              )}
+            <div className={`flex items-center p-3 rounded-lg ${uploadMessage.type === "success" ? "bg-teal-50 text-teal-800 border border-teal-300" : "bg-red-50 text-red-800 border border-red-300"}`}>
+              {uploadMessage.type === "success" ? <CheckCircle className="w-5 h-5 mr-2" /> : <X className="w-5 h-5 mr-2" />}
               <p className="text-sm font-medium">{uploadMessage.text}</p>
             </div>
           )}
-
           <div className="flex justify-end space-x-3 pt-2">
             <button
               type="button"
@@ -244,87 +233,74 @@ const Admin = () => {
       </div>
     </div>
   );
-
+  
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-purple-100 p-4 sm:p-8 lg:p-12 text-gray-800 font-['Inter']">
+    <div className="min-h-screen bg-gray-50 p-4 sm:p-8 lg:p-12 text-gray-800 font-sans">
       {isUploadModalOpen && <UploadCityModal />}
-
       <div className="max-w-7xl mx-auto">
-        <h1 className="text-4xl sm:text-5xl font-extrabold mb-10 text-indigo-900 tracking-tight border-b-4 border-pink-300 pb-2">
-          Dashboard: {userData.name || "Explorer"}
-        </h1>
-
+        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+          <h1 className="text-4xl sm:text-5xl font-extrabold mb-10 text-gray-900 tracking-tight">
+            Welcome back, <span className="text-indigo-600">{userData.name || "Explorer"}</span>!
+          </h1>
+        </motion.div>
         <div className="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-
-          <div className="lg:col-span-1 bg-white p-6 sm:p-8 rounded-3xl shadow-2xl border-t-8 border-indigo-500 h-fit">
-            <h2 className="text-2xl font-bold mb-6 text-indigo-700 flex items-center">
-              <MapPin className="w-5 h-5 mr-2 text-pink-500" /> User Profile
+          <motion.div 
+            className="lg:col-span-1 bg-white p-6 sm:p-8 rounded-2xl shadow-xl h-fit"
+            initial={{ opacity: 0, x: -50 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5, delay: 0.2 }}
+          >
+            <h2 className="text-2xl font-bold mb-6 text-gray-800 flex items-center">
+              <MapPin className="w-5 h-5 mr-2 text-indigo-500" /> My Profile
             </h2>
             <div className="flex flex-col items-center">
-              <img
-                className="w-32 h-32 rounded-full mb-6 object-cover border-4 border-pink-500 shadow-xl transition transform hover:scale-105"
-                src="https://placehold.co/128x128/E5E7EB/4B5563?text=User"
-                alt="Profile"
-              />
-              <div className="w-full space-y-4">
+              <div className="relative mb-6">
+                <img className="w-32 h-32 rounded-full object-cover border-4 border-white shadow-xl" src="https://placehold.co/128x128/E5E7EB/4B5563?text=User" alt="Profile" />
+                <div className="absolute inset-0 rounded-full border-2 border-indigo-500 animate-pulse"></div>
+              </div>
+              <div className="w-full space-y-3">
                 {[
                   { label: "Name", value: userData.name },
                   { label: "Email", value: userData.email },
                   { label: "Joined On", value: new Date(userData.createdAt).toLocaleDateString() },
-                  { label: "Visited Cities", value: userData.visitedCities?.length || 0 },
-                ].map((field, index) => (
-                  <div key={index}>
-                    <label className="text-sm font-medium text-gray-500 block mb-1">{field.label}</label>
-                    <input className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl font-medium text-gray-800 shadow-inner focus:ring-indigo-500" value={field.value} readOnly />
+                ].map((field) => (
+                  <div key={field.label} className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                    <label className="text-xs font-medium text-gray-500">{field.label}</label>
+                    <p className="font-semibold text-gray-800">{field.value}</p>
                   </div>
                 ))}
-
-                <div>
-                  <label className="text-sm font-medium text-gray-500 block mb-1">Bio</label>
-                  <textarea className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl shadow-inner focus:ring-indigo-500" rows={2} defaultValue="Traveler & History enthusiast." />
-                </div>
               </div>
-
-              <button
-                onClick={() => setIsUploadModalOpen(true)}
-                className="mt-6 w-full flex items-center justify-center px-6 py-3 border border-transparent text-base font-semibold rounded-xl shadow-md text-white bg-teal-600 hover:bg-teal-700 transition duration-150 ease-in-out transform hover:scale-[1.01]"
-              >
-                <UploadCloud className="w-5 h-5 mr-2" />
-                Suggest a City
+              <button onClick={() => setIsUploadModalOpen(true)} className="mt-8 w-full flex items-center justify-center px-6 py-3 font-semibold rounded-lg shadow-md text-white bg-indigo-600 hover:bg-indigo-700 transition">
+                <UploadCloud className="w-5 h-5 mr-2" /> Suggest a City
               </button>
             </div>
-          </div>
-
-          <div className="lg:col-span-2 xl:col-span-3 space-y-8">
-
-            <div className="bg-white p-6 sm:p-8 rounded-3xl shadow-2xl border border-gray-100">
-              <h2 className="text-2xl font-bold mb-6 text-indigo-700">Quiz Performance Over Time</h2>
-              <div className="grid grid-cols-1 gap-8">
-                <div className="p-4 border border-gray-100 rounded-2xl shadow-inner transition hover:shadow-lg">
-                  <h3 className="text-lg font-semibold mb-3 text-gray-700">Recent Scores</h3>
+          </motion.div>
+          <motion.div 
+            className="lg:col-span-2 xl:col-span-3 space-y-8"
+            initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.4 }}
+          >
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <StatCard icon={<BookOpen className="w-6 h-6 text-indigo-500" />} title="Total Quizzes Taken" value={totalQuizzes} color="border-indigo-500" />
+              <StatCard icon={<Target className="w-6 h-6 text-pink-500" />} title="Overall Average Score" value={`${overallAvgScore}%`} color="border-pink-500" detail={`out of ${totalQuizzes} quizzes`} />
+              <StatCard icon={<Award className="w-6 h-6 text-teal-500" />} title="Best Performing City" value={bestCity} color="border-teal-500" />
+            </div>
+            <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-xl">
+              <h2 className="text-2xl font-bold mb-6 text-gray-800">Performance Analysis</h2>
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                <div className="p-4 bg-gray-50 rounded-xl">
+                  <h3 className="text-lg font-semibold mb-3 text-gray-700 text-center">Scores Over Time</h3>
                   <Line data={lineData} options={{ maintainAspectRatio: true, responsive: true }} />
                 </div>
-              </div>
-            </div>
-
-            <div className="bg-white p-6 sm:p-8 rounded-3xl shadow-2xl border border-gray-100">
-              <h2 className="text-2xl font-bold mb-6 text-indigo-700">City Exploration Summary</h2>
-              <div className="flex flex-col xl:flex-row items-center gap-8">
-
-                <div className="flex flex-col items-center justify-center p-8 bg-pink-50 rounded-2xl shadow-inner w-full xl:w-1/3 min-h-[180px] border-l-4 border-pink-500">
-                  <span className="text-6xl font-black text-pink-600 drop-shadow-md">{userData.visitedCities?.length || 0}</span>
-                  <span className="text-lg font-extrabold text-pink-800 mt-3 text-center tracking-wide">Cities Explored</span>
-                  <p className="text-xs text-gray-500 mt-1">A growing virtual journey.</p>
-                </div>
-
-                <div className="w-full xl:w-2/3 p-4 border border-gray-100 rounded-2xl shadow-inner transition hover:shadow-lg">
-                  <h3 className="text-lg font-semibold mb-3 text-gray-700">Recent Visit Count</h3>
-                  <Bar data={barData} options={{ maintainAspectRatio: true, responsive: true }} />
+                <div className="p-4 bg-gray-50 rounded-xl">
+                  <h3 className="text-lg font-semibold mb-3 text-gray-700 text-center">Average Score by City</h3>
+                  {pieData.labels.length > 0 ? (
+                     <div className="max-w-[350px] mx-auto"><Pie data={pieData} options={{ maintainAspectRatio: true, responsive: true }} /></div>
+                  ) : (<p className="text-center text-gray-500 h-full flex items-center justify-center">No quiz data yet.</p>)}
                 </div>
               </div>
             </div>
+            
+            <UserVisitedMap visitedCities={visitedCitiesWithCoords} />
 
-          </div>
+          </motion.div>
         </div>
       </div>
     </div>

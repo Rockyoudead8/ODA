@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useParams ,useNavigate } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import Quiz_info from "../components/CityInfo";
 import SoundBox from "../components/SoundBox";
 import VMap from "../components/VirtualWalk/VirtualWalkMap";
@@ -9,6 +9,7 @@ import "slick-carousel/slick/slick-theme.css";
 import Leaderboard from "../components/Leaderboard";
 import Timeline from "../components/Timeline";
 import { Heart, MapPin, MessageCircle, Volume2, Globe, Clock, CheckCircle } from "lucide-react";
+
 
 function Specific() {
   const navigate = useNavigate();
@@ -23,6 +24,7 @@ function Specific() {
   const [visitCount, setVisitCount] = useState(0);
   const [message, setMessage] = useState("");
 
+  // displayMessage and toggleCityVisit functions remain the same
   const displayMessage = (text, isError = false) => {
     setMessage({ text, isError });
     setTimeout(() => setMessage(""), 3000);
@@ -34,19 +36,16 @@ function Specific() {
       displayMessage("Please log in to track your visited cities.", true);
       return;
     }
-
     try {
       const res = await fetch("http://localhost:8000/api/toggle-visit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId, listingId: id }),
       });
-
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to update visit");
-
       setVisited(data.visited);
-      setVisitCount(data.count);
+      // setVisitCount(data.count); // The toggle endpoint should return the new total count
       displayMessage(data.visited ? "City marked as visited!" : "Visit status removed.", false);
     } catch (err) {
       console.error(err);
@@ -54,21 +53,38 @@ function Specific() {
     }
   };
 
+  // --- MODIFIED: Combined useEffect for all initial data fetching ---
   useEffect(() => {
-    const fetchListingAndComments = async () => {
+    const fetchAllData = async () => {
       try {
-        // Fetch Listing Details
-        const listingRes = await fetch(`http://localhost:8000/api/listing/${id}`);
-        if (!listingRes.ok) throw new Error("Failed to fetch listing");
-        const listingData = await listingRes.json();
-        setListing(listingData);
+        setLoading(true);
 
-        // Fetch Comments for the Listing
-        const commentsRes = await fetch(`http://localhost:8000/api/comments/${id}`);
+        // 1. Fetch Listing Details and Comments in parallel
+        const [listingRes, commentsRes] = await Promise.all([
+          fetch(`http://localhost:8000/api/listing/${id}`),
+          fetch(`http://localhost:8000/api/comments/${id}`)
+        ]);
+
+        if (!listingRes.ok) throw new Error("Failed to fetch listing");
         if (!commentsRes.ok) throw new Error("Failed to fetch comments");
+
+        const listingData = await listingRes.json();
         const commentsData = await commentsRes.json();
+
+        setListing(listingData);
         setComments(commentsData);
 
+        // 2. Fetch Visit Count now that we have the listing title
+        if (listingData.title) {
+          const visitRes = await fetch(
+            `http://localhost:8000/api/get_visits?cityName=${encodeURIComponent(listingData.title)}`
+          );
+          if (visitRes.ok) {
+            const visitData = await visitRes.json();
+            setVisitCount(visitData.userCount || 0);
+          }
+        }
+        
       } catch (err) {
         setError(err.message);
       } finally {
@@ -77,10 +93,11 @@ function Specific() {
     };
 
     if (id) {
-        fetchListingAndComments();
+      fetchAllData();
     }
   }, [id]);
 
+  // handleCommentSubmit and sliderSettings functions remain the same
   const sliderSettings = {
     dots: true,
     infinite: true,
@@ -106,19 +123,15 @@ function Specific() {
       displayMessage("Comment cannot be empty.", true);
       return;
     }
-
     const userId = localStorage.getItem("userId");
     if (!userId) {
       displayMessage("You must be logged in to comment.", true);
       return;
     }
-
     let imageUrl = "";
-
     if (commentImage) {
       const formData = new FormData();
       formData.append("image", commentImage);
-
       try {
         const res = await fetch("http://localhost:8000/api/upload/image", {
           method: "POST",
@@ -133,7 +146,6 @@ function Specific() {
         return;
       }
     }
-
     try {
       const res = await fetch(`http://localhost:8000/api/comments`, {
         method: "POST",
@@ -145,10 +157,8 @@ function Specific() {
           userId,
         }),
       });
-
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to post comment");
-
       setComments([...comments, data]);
       setCommentText("");
       setCommentImage(null);
@@ -159,6 +169,7 @@ function Specific() {
     }
   };
 
+  // Return statement with JSX remains the same
   if (loading) return <p className="text-center mt-20 text-lg font-semibold text-gray-700">Loading City Details...</p>;
   if (error) return <p className="text-center text-red-600 mt-20 font-semibold">Error: {error}</p>;
   if (!listing) return <p className="text-center mt-20 text-lg font-semibold text-gray-700">Listing not found!</p>;
@@ -260,7 +271,7 @@ function Specific() {
 
         <div className="space-y-6">
           <div className="bg-white p-6 rounded-2xl shadow-xl border border-indigo-100 h-[70vh] ">
-            <Leaderboard listingId={listing._id}/>
+            <Leaderboard listingId={listing._id} />
           </div>
 
           <div className="bg-white p-6 rounded-2xl shadow-xl border border-indigo-100">
@@ -317,7 +328,7 @@ function Specific() {
           </div>
         </div>
       </div>
-      
+
       <div className="bg-white p-6 rounded-2xl shadow-xl border border-indigo-100 ">
         <h2 className="text-2xl font-bold text-indigo-600 mb-4">City Timeline</h2>
         <Timeline city={listing.title} />

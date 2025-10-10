@@ -130,6 +130,25 @@ router.get('/google',passport.authenticate("google",{scope: ["profile","email"]}
 
 //   });
 
+
+
+router.get("/", async (req, res) => {
+  try {
+    const { cityName } = req.query;
+    if (!cityName) return res.status(400).json({ error: "cityName is required" });
+
+    const count = await user.countDocuments({ visitedCities: cityName });
+    res.json({ cityName, userCount: count });
+  } catch (err) {
+    console.error("Error:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+
+module.exports = router;
+
+
 router.get("/google/callback", (req, res, next) => {
   try {
     passport.authenticate("google", (err, user, info) => {

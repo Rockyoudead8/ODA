@@ -1,6 +1,7 @@
-import React, { useState, useContext } from "react";
-import { MapPin } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import React, { useState, useContext, useEffect } from "react"; // 1. Add useEffect
+import { MapPin, X } from "lucide-react";
+// 2. Add useLocation
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { UserContext } from "../UserContext";
 
 function LoginPage() {
@@ -9,6 +10,22 @@ function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const navigate = useNavigate();
+  const location = useLocation(); // 3. Get the location object
+
+  // 4. Add state to manage the popup message from the redirect
+  const [popupMessage, setPopupMessage] = useState("");
+
+  // 5. Add useEffect to check for a message when the component loads
+  useEffect(() => {
+    if (location.state?.message) {
+      setPopupMessage(location.state.message);
+      // Clear the state so the message doesn't reappear on refresh
+      navigate(location.pathname, { replace: true, state: {} });
+
+      const timer = setTimeout(() => setPopupMessage(""), 5000); // Hide after 5s
+      return () => clearTimeout(timer);
+    }
+  }, [location.state, navigate, location.pathname]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -32,13 +49,27 @@ function LoginPage() {
     }
   };
 
-  // 🟢 Google Login Handler
   const handleGoogleLogin = () => {
     window.location.href = "http://localhost:8000/api/auth/google";
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 to-purple-100 p-4">
+      {/* --- 6. ADD THIS JSX TO DISPLAY THE POPUP --- */}
+      {popupMessage && (
+        <div className="fixed top-5 right-5 z-50 max-w-sm animate-fade-in-down">
+          <div className="flex items-center justify-between gap-4 rounded-lg border border-red-200 bg-red-50 p-4 text-red-700 shadow-lg">
+            <p className="text-sm font-medium">{popupMessage}</p>
+            <button
+              onClick={() => setPopupMessage("")}
+              className="p-1 rounded-full hover:bg-red-100"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="bg-white shadow-2xl rounded-xl p-6 sm:p-10 w-full max-w-md border-t-8 border-pink-500 transform transition duration-500 hover:shadow-pink-300/50">
         <div className="flex flex-col items-center mb-6 sm:mb-8">
           <MapPin className="w-10 h-10 text-pink-500 mb-2" />
@@ -95,7 +126,6 @@ function LoginPage() {
             Login
           </button>
 
-          {/* 🟢 Login with Google */}
           <button
             type="button"
             onClick={handleGoogleLogin}

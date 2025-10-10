@@ -6,139 +6,84 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 const model = genAI.getGenerativeModel({
   model: "gemini-2.5-flash",
-  config: {
+  generationConfig: {
     responseMimeType: "application/json",
     temperature: 0.7,
-    maxOutputTokens: 1000,
   },
 });
 
-// Cache time: 12 hours (in milliseconds)
-const CACHE_TTL = 1000 * 60 * 60 * 12;
+const CACHE_TTL = 1000 * 60 * 60 * 12; // 12 hours
 
 exports.handleGenerateinfo = async (req, res) => {
   try {
-    const { city } = req.body;
+    const { city, force_new } = req.body;
     if (!city) {
-      return res.status(400).json({ error: "City is required in the request body." });
+      return res.status(400).json({ error: "City is required." });
     }
 
     const cityKey = city.toLowerCase().trim();
-
-    // Check if city data exists and is still valid
     const existing = await CityData.findOne({ city: cityKey });
 
-    if (existing && Date.now() - new Date(existing.updatedAt).getTime() < CACHE_TTL) {
+    if (!force_new && existing && Date.now() - new Date(existing.updatedAt).getTime() < CACHE_TTL) {
       console.log(`Returning cached data for ${cityKey}`);
       return res.status(200).json(existing.data);
     }
 
-    console.log(` Generating new data for ${cityKey}...`);
+    console.log(`Generating new data for ${cityKey}...`);
 
+    // --- MODIFIED PROMPT ---
     const prompt = `
-You are a historian and quiz creator.
+      You are a historian and quiz creator. Generate detailed JSON for "${city}".
+      Return ONLY valid JSON.
 
-Generate detailed JSON data for the city "${city}" in exactly this format.
-Return ONLY valid JSON (no markdown, text, or commentary outside JSON).
+      {
+        "history": "A short but detailed historical background of the city.",
+        "facts": ["fact1", "fact2", "fact3", "fact4"],
+        "famousStory": "A famous legend or cultural story associated with the city.",
+        "timeline": [
+          {"date": "YYYY", "event": "An important historical event."},
+          {"date": "YYYY", "event": "Another significant milestone."}
+        ],
+        "quizQuestions": [
+          {
+            "question": "Q1?",
+            "options": ["Option A", "Option B", "Option C", "Option D"],
+            "correctAnswerIndex": 1, 
+            "explanation": "Short explanation for why the answer (Option B) is correct."
+          },
+          {
+            "question": "Q2?",
+            "options": ["Option A", "Option B", "Option C", "Option D"],
+            "correctAnswerIndex": 3,
+            "explanation": "Explanation for why the answer (Option D) is correct."
+          },
+          {
+            "question": "Q3?",
+            "options": ["Option A", "Option B", "Option C", "Option D"],
+            "correctAnswerIndex": 0,
+            "explanation": "Explanation for why the answer (Option A) is correct."
+          }
+        ]
+      }
 
-{
-  "history": "A short but detailed historical background of the city.",
-  "facts": ["fact1", "fact2", "fact3", "fact4"],
-  "famousStory": "A famous legend, myth, or cultural story associated with the city.",
-  "timeline": [
-    {
-      "date": "YYYY-MM-DD or just Year",
-      "event": "Brief description of what happened on this date or year in this city."
-    },
-    {
-      "date": "YYYY",
-      "event": "Another important historical event."
-    },
-    {
-      "date": "YYYY",
-      "event": "Another significant milestone."
-    }
-  ],
-  "quizQuestions": [
-    {
-      "question": "Q1?",
-      "options": ["A", "B", "C", "D"],
-      "correctAnswer": "B",
-      "explanation": "Short explanation about why option B is correct or extra info related to this fact."
-    },
-    {
-      "question": "Q2?",
-      "options": ["A", "B", "C", "D"],
-      "correctAnswer": "D",
-      "explanation": "Explanation or historical reasoning for this question's answer."
-    },
-    {
-      "question": "Q3?",
-      "options": ["A", "B", "C", "D"],
-      "correctAnswer": "A",
-      "explanation": "Concise educational note or background for learners."
-    },
-    {
-      "question": "Q4?",
-      "options": ["A", "B", "C", "D"],
-      "correctAnswer": "C",
-      "explanation": "Explanation giving cultural or historical relevance."
-    },
-    {
-      "question": "Q5?",
-      "options": ["A", "B", "C", "D"],
-      "correctAnswer": "B",
-      "explanation": "Extra insight or trivia about this question topic."
-    }
-  ]
-}
-
-Each quiz question must have exactly one correct answer, 4 options, and a short explanation (2–3 lines maximum). 
-Include at least 5 important dates in the timeline. Each date should have a brief description that can be shown as a marker on a road/timeline in a frontend component.
-`;
+      Ensure 'correctAnswerIndex' is the zero-based index of the correct option in the 'options' array.
+    `;
 
     const result = await model.generateContent(prompt);
+    const responseText = result.response.text();
+    let parsedData = JSON.parse(responseText);
 
-    // Extract text safely
-    let text =
-      (typeof result.response?.text === "function"
-        ? await result.response.text()
-        : result.response?.text) ||
-      result?.text ||
-      result?.candidates?.[0]?.content?.parts?.[0]?.text ||
-      "";
-
-    if (!text) {
-      console.error("Empty response from model:", result);
-      return res.status(500).json({ error: "Model returned empty content." });
-    }
-
-    text = text.replace(/```json|```/g, "").trim();
-
-    let parsed;
-    try {
-      parsed = JSON.parse(text);
-    } catch (err) {
-      console.error("JSON parsing error:", err.message, "\nRaw text:", text);
-      return res.status(500).json({ error: "Model returned invalid JSON format." });
-    }
-
-    // Save or update (safe against duplicate key errors)
     await CityData.findOneAndUpdate(
       { city: cityKey },
-      {
-        $set: {
-          data: parsed,
-          updatedAt: new Date(),
-        },
-      },
-      { upsert: true, new: true }
+      { $set: { data: parsedData, updatedAt: new Date() } },
+      { upsert: true }
     );
 
-    console.log(`done Cached/Updated data for ${cityKey}`);
-    res.status(200).json(parsed);
+    console.log(`Cached/Updated data for ${cityKey}`);
+    res.status(200).json(parsedData);
+
   } catch (err) {
     console.error("Internal error:", err);
-    res.status(500).json({ error: "Internal Server Error: " + err.message });
+    res.status(500).json({ error: "Internal Server Error." });
   }
 };
