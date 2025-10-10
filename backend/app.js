@@ -50,8 +50,8 @@ app.use(session({
   saveUninitialized: false,
   cookie: {
     httpOnly: true,
-    // secure: false, // set true if using https
-    secure:true,
+    secure: false, // set true if using https
+    // secure:true,
     sameSite: "lax", // important for localhost
   }
 }));
@@ -69,15 +69,20 @@ app.use(passport.session());
 
 passport.use(userModel.createStrategy()); // Local strategy (handled by passport-local-mongoose)
 passport.serializeUser((user,done) => done(null,user.id));
-passport.deserializeUser((id,done)=>{
-    userModel.findById(id,(err,user) => done(err,user));
+passport.deserializeUser(async (id, done) => { 
+    try {
+        const user = await userModel.findById(id);
+        done(null, user);
+    } catch (err) {
+        done(err, null);
+    }
 });
+
 
 passport.use(new GoogleStrategy( {
     clientID: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
     callbackURL: process.env.GOOGLE_CALLBACK_URL,
-    // passReqToCallback : true
   },
 
   async function(accessToken, refreshToken, profile, done) { 
@@ -91,6 +96,7 @@ passport.use(new GoogleStrategy( {
 
 
     if(!user){
+      // we are signing up the user 
       const newUser = new userModel({
         googleId: profile.id,
         email: profile.emails[0].value,
@@ -101,6 +107,7 @@ passport.use(new GoogleStrategy( {
       return done(null,newUser);
     }
     else{
+            // we are logining in the user 
             if (!user.googleId) {
                 user.googleId = profile.id;
                 await user.save();

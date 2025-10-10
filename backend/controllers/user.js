@@ -35,6 +35,7 @@ exports.handleGetUser = async (req, res) => {
 exports.handleLogin = (req, res) => {
 
   const { email, password } = req.body;
+
   try {
 
     if(!req.isAuthenticated()){
@@ -116,6 +117,7 @@ exports.handleLogout = (req, res, next) => {
         // Clear session cookie
         res.clearCookie("connect.sid");
 
+        console.log("Logout Successful");
         return res.status(200).json({ message: "Logout Successful" });
         // return res.status(200).redirect('/login'); 
 
@@ -124,6 +126,7 @@ exports.handleLogout = (req, res, next) => {
     });
 
   } else {
+    console.log("User is not logged in");
     return res.status(401).json({ message: "User is not logged in" });
   }
 

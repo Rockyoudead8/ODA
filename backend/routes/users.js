@@ -64,7 +64,7 @@ router.post('/signup', c.handleSignup );
 
 // logout route 
 // see why just using req.logout is not working?? - IMPORTANT // it is method by passport 
-router.get("/logout", );
+router.get("/logout", c.handleLogout );
 
 
 //check if user is logged in - route
