@@ -78,7 +78,7 @@ function Hero() {
       <div className="max-w-4xl mx-auto mb-10 sm:mb-12 text-center">
        
         <h1 className="text-3xl sm:text-5xl font-extrabold text-indigo-800 mb-3 tracking-tight">
-          Start Your Virtual Walk
+          Lets Start The Journey !
         </h1>
         <p className="text-base sm:text-xl text-gray-600 mb-6 sm:mb-8">
           Explore history, culture, and stories of the world's most fascinating cities.

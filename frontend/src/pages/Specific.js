@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { useParams ,useNavigate } from "react-router-dom";
-import Map from "../components/Map";
 import Quiz_info from "../components/CityInfo";
 import SoundBox from "../components/SoundBox";
 import VMap from "../components/VirtualWalk/VirtualWalkMap";
@@ -56,18 +55,20 @@ function Specific() {
   };
 
   useEffect(() => {
-
-    const fetchListing = async () => { 
-
+    const fetchListingAndComments = async () => {
       try {
-        const res = await fetch(`http://localhost:8000/api/listing/${id}`);
-        const data = await res.json();
+        // Fetch Listing Details
+        const listingRes = await fetch(`http://localhost:8000/api/listing/${id}`);
+        if (!listingRes.ok) throw new Error("Failed to fetch listing");
+        const listingData = await listingRes.json();
+        setListing(listingData);
 
-        if (!res.ok) {
-          throw new Error(data.error || "Failed to fetch listing");
-        }
+        // Fetch Comments for the Listing
+        const commentsRes = await fetch(`http://localhost:8000/api/comments/${id}`);
+        if (!commentsRes.ok) throw new Error("Failed to fetch comments");
+        const commentsData = await commentsRes.json();
+        setComments(commentsData);
 
-        setListing(data);
       } catch (err) {
         setError(err.message);
       } finally {
@@ -75,7 +76,9 @@ function Specific() {
       }
     };
 
-    fetchListing();
+    if (id) {
+        fetchListingAndComments();
+    }
   }, [id]);
 
   const sliderSettings = {
@@ -139,6 +142,7 @@ function Specific() {
           listing: id,
           text: commentText,
           image: imageUrl,
+          userId,
         }),
       });
 
@@ -294,8 +298,8 @@ function Specific() {
                 <p className="text-gray-500 italic">Be the first to leave a comment!</p>
               ) : (
                 <div className="max-h-60 overflow-y-auto space-y-3">
-                  {comments.map((c, idx) => (
-                    <div key={idx} className="p-3 bg-gray-50 rounded-lg border border-gray-100">
+                  {comments.map((c) => (
+                    <div key={c._id} className="p-3 bg-gray-50 rounded-lg border border-gray-100">
                       <p className="text-gray-800">{c.text}</p>
                       {c.image && (
                         <img
@@ -305,7 +309,6 @@ function Specific() {
                         />
                       )}
                       <p className="text-xs text-gray-400 mt-1">— {c.user?.name || "Anonymous"}</p>
-
                     </div>
                   ))}
                 </div>
@@ -315,14 +318,10 @@ function Specific() {
         </div>
       </div>
       
-
-      
       <div className="bg-white p-6 rounded-2xl shadow-xl border border-indigo-100 ">
         <h2 className="text-2xl font-bold text-indigo-600 mb-4">City Timeline</h2>
         <Timeline city={listing.title} />
       </div>
-
-
     </div>
   );
 }

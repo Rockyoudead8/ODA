@@ -130,38 +130,37 @@ router.get('/google',passport.authenticate("google",{scope: ["profile","email"]}
 
 //   });
 
-  router.get("/google/callback", (req, res, next) => {
-    // next has to be used even if we arent using it any where
-
+router.get("/google/callback", (req, res, next) => {
   try {
     passport.authenticate("google", (err, user, info) => {
       if (err) {
-        console.log("error with server");
-        return res.status(500).json({ message: "Server error" });
+        console.log("Error with server");
+        return res.redirect("http://localhost:5173/login?error=server");
       }
 
       if (!user) {
-        console.log("Google login failed")
-        return res.status(401).json({ message: "Google login failed" });
+        console.log("Google login failed");
+        return res.redirect("http://localhost:5173/login?error=auth_failed");
       }
 
       req.login(user, (err) => {
         if (err) {
-          console.log("Login failed")
-          return res.status(500).json({ message: "Login failed" });
+          console.log("Login failed");
+          return res.redirect("http://localhost:5173/login?error=login_failed");
         }
-        
-        console.log("Google login/signup successful")
-        res.status(200).json({ message: "Google login/signup successful", user });
+
+        console.log("Google login/signup successful");
+
+        // Redirect to frontend dashboard (or Hero page)
+        res.redirect("http://localhost:3000/Hero");
       });
-
     })(req, res, next);
-
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: err.message });
+    res.redirect("http://localhost:5173/login?error=exception");
   }
 });
+
 
 
 module.exports = router;

@@ -1,14 +1,13 @@
 import React, { useState, useContext } from "react";
 import { MapPin } from "lucide-react";
-import { Link } from "react-router-dom";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { UserContext } from "../UserContext";
 
 function LoginPage() {
-  const { setUser } = useContext(UserContext); // access global setUser
+  const { setUser } = useContext(UserContext);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error,setError] = useState("");
+  const [error, setError] = useState("");
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -22,16 +21,21 @@ function LoginPage() {
       });
       const data = await response.json();
       if (response.ok) {
-        setUser(data.user); // update global state
+        setUser(data.user);
         navigate("/Hero");
       } else {
-        alert("Login failed");
+        setError(data.error || "Login failed");
       }
     } catch (err) {
       console.error(err);
+      setError("An error occurred during login.");
     }
   };
 
+  // 🟢 Google Login Handler
+  const handleGoogleLogin = () => {
+    window.location.href = "http://localhost:8000/api/auth/google";
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 to-purple-100 p-4">
@@ -41,7 +45,9 @@ function LoginPage() {
           <h2 className="text-2xl sm:text-3xl font-extrabold text-gray-800 tracking-tight">
             Welcome Back!
           </h2>
-          <p className="text-sm sm:text-base text-gray-500 mt-1">Sign in to continue your virtual walk.</p>
+          <p className="text-sm sm:text-base text-gray-500 mt-1">
+            Sign in to continue your virtual walk.
+          </p>
         </div>
 
         {error && (
@@ -54,10 +60,10 @@ function LoginPage() {
           <div className="relative">
             <input
               type="text"
-              placeholder="     Email or Username"
+              placeholder="Email or Username"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full p-3 sm:p-4 pl-12 border border-indigo-200 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-pink-400 transition"
+              className="w-full p-3 sm:p-4 pl-4 border border-indigo-200 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-pink-400 transition"
               required
             />
           </div>
@@ -65,16 +71,19 @@ function LoginPage() {
           <div className="relative">
             <input
               type="password"
-              placeholder="     Password"
+              placeholder="Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full p-3 sm:p-4 pl-12 border border-indigo-200 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-pink-400 transition"
+              className="w-full p-3 sm:p-4 pl-4 border border-indigo-200 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-pink-400 transition"
               required
             />
           </div>
 
           <div className="flex justify-between items-center">
-            <a href="/forgot-password" className="text-sm text-indigo-500 hover:text-pink-500 hover:underline transition">
+            <a
+              href="/forgot-password"
+              className="text-sm text-indigo-500 hover:text-pink-500 hover:underline transition"
+            >
               Forgot Password?
             </a>
           </div>
@@ -85,11 +94,28 @@ function LoginPage() {
           >
             Login
           </button>
+
+          {/* 🟢 Login with Google */}
+          <button
+            type="button"
+            onClick={handleGoogleLogin}
+            className="w-full flex items-center justify-center bg-white border border-gray-300 text-gray-700 font-semibold p-3 sm:p-4 rounded-lg hover:bg-gray-50 transition duration-300 shadow-md hover:shadow-lg mt-2"
+          >
+            <img
+              src="https://developers.google.com/identity/images/g-logo.png"
+              alt="Google"
+              className="w-5 h-5 mr-2"
+            />
+            Login with Google
+          </button>
         </form>
 
         <p className="text-center text-sm mt-6 text-gray-600">
           New user?{" "}
-          <Link to="/Signup" className="font-semibold text-pink-500 hover:text-pink-600 hover:underline transition">
+          <Link
+            to="/Signup"
+            className="font-semibold text-pink-500 hover:text-pink-600 hover:underline transition"
+          >
             Create an account
           </Link>
         </p>

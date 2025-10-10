@@ -41,7 +41,7 @@ function Header() {
             onClick={() => setIsMenuOpen(false)}
           >
             <MapPin className="w-5 h-5 sm:w-6 sm:h-6 text-pink-500" />
-            <span className="font-sans">VirtualWalk</span>
+            <span className="font-sans">शहरनामा  "Shaharnaama"</span>
           </Link>
         </div>
 

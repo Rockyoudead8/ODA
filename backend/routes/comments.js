@@ -9,7 +9,7 @@ const {getComments , postComments} = require('../controllers/comments')
 
 
 // post comments route 
-router.post("/", postComments);
+router.post("/comments", postComments);
 
 // get comments route
 router.get("/comments/:listingId", getComments);
