@@ -1,4 +1,4 @@
-# 🌍 ODA — *On-Demand Artist Assistant*
+# 🏙️ शहरनामा (Shaharnaama) — *Chronicles of Cities*
 
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 ![Status](https://img.shields.io/badge/Status-Active-brightgreen.svg)
@@ -9,25 +9,32 @@
 
 ---
 
+### 🌆 Tagline
+
+> **“हर शहर की अपनी कहानी है — शहरनामा उसे सुनाता है।”**  
+> *"Every city has a story — Shaharnaama brings it to life."*
+
+---
+
 ## 🎯 Overview
 
-**ODA (On-Demand Artist Assistant)** is a full-stack web platform created to help **performers** explore their **next performance destinations** through:
+**शहरनामा (Shaharnaama)** — *Chronicles of Cities* — is a full-stack web platform designed to help **performers and explorers** discover the **stories, art, and culture of cities** through:
 
-🎭 photos, 🗣️ voices, 🗺️ virtual maps, 🧠 quizzes, 📖 historical facts, and 🏆 performance leaderboards.
+📸 photos, 🗣️ voices, 🗺️ virtual maps, 🧠 quizzes, 📖 historical facts, and 🏆 leaderboards.
 
-Users can test their knowledge, earn badges, share reviews, and explore upcoming venues — all in one interactive space.
+Users can test their knowledge, earn badges, share reviews, and explore the past and present of cities — all in one immersive platform.
 
 ---
 
 ## ✨ Key Features
 
-- 🎤 **Performance Discovery** — Explore your next performance location visually & aurally.  
-- 🗺️ **Virtual Maps** — Get a geographic feel of upcoming venues.  
-- 🧠 **Dynamic Quizzes** — Fresh quizzes generated via APIs each time — no repetition, no boredom!  
-- 🏆 **Leaderboard & Badges** — Track achievements and earn rewards.  
-- 🏙️ **City Reviews** — Share and view reviews from other artists.  
-- 📚 **History & Fun Facts** — Learn cultural and historical insights about venues.  
-- 👤 **Personal Profiles** — Manage achievements, reviews, and quizzes in one place.
+- 🗺️ **City Chronicles** — Dive into the visual and aural identity of cities.  
+- 🎭 **Performance Discovery** — Find your next stage or cultural hotspot.  
+- 🧠 **Dynamic Quizzes** — Fresh, API-generated questions for every session.  
+- 🏆 **Leaderboard & Badges** — Earn achievements and climb the ranks.  
+- 🏙️ **City Reviews** — Read and share reviews with fellow explorers.  
+- 📚 **History & Fun Facts** — Learn untold stories about places.  
+- 👤 **Personal Profiles** — Track your journey, badges, and quiz stats.  
 
 ---
 
@@ -38,106 +45,14 @@ Users can test their knowledge, earn badges, share reviews, and explore upcoming
 | **Frontend** | React.js, Tailwind CSS, shadcn/ui |
 | **Backend** | Node.js, Express.js |
 | **Other Tools** | RESTful APIs, Nodemon |
-| **Database** | (Add your DB here if applicable — MongoDB / PostgreSQL) |
+| **Database** | (Add your DB here — MongoDB / PostgreSQL) |
 
 ---
 
-## Install dependencies
-Backend:
+## ⚙️ Installation & Setup
+
+### Install Dependencies
+**Backend:**
+```bash
 cd backend
 npm install
-
-# Frontend:
-cd ../frontend
-npm install
-
-## Configure environment
-
-Create a .env file inside the backend directory:
-
-PORT=5000
-API_KEY=your_api_key_here
-DATABASE_URL=your_database_url_here
-
-## Run the Project
-Start the Backend
-cd backend
-npx nodemon
-
-Start the Frontend
-cd frontend
-npm start
-
-
-Then open your browser at:
-
-👉 Frontend: http://localhost:5000
-
-👉 Backend: http://localhost:8000
-
-## How It Works
-
-Performers explore potential cities or venues.
-
-ODA displays images, audio previews, historical info, and virtual maps.
-
-Users take dynamic quizzes — generated freshly via API calls each time.
-
-Based on their performance, they earn badges and appear on the leaderboard.
-
-In their profile section, users can review cities and track their own stats.
-
-## Future Roadmap
-
-🤖 AI-based performance recommendations
-
-🧭 AR-based city and venue exploration
-
-📅 Real-time local event suggestions
-
-🧑‍🤝‍🧑 Community and collaboration features
-
-## 🤝 Contributing
-
-Contributions are always welcome!
-To contribute:
-
-Fork this repository
-
-Create a new branch
-
-git checkout -b feature/YourFeature
-
-
-Commit your changes
-
-git commit -m "Add new feature"
-
-
-Push to your branch
-
-git push origin feature/YourFeature
-
-
-Create a Pull Request 🚀
-
-## 📜 License
-
-This project is licensed under the MIT License — see the LICENSE
- file for details.
-
-## 👨‍🎤 Author
-
-Developed by 
-Arpit Goyal
-Lucky Sharma
-
-“Helping performers connect with the world — one stage at a time.”
-
-## 🌟 Show Your Support
-
-If you like this project, consider giving it a ⭐ on GitHub
-!
-Your support helps keep the project growing.
-
-
