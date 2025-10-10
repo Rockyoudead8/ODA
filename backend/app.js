@@ -43,6 +43,12 @@ mongoose.connect(process.env.MONGODB_URL, {
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
 
+// body parser middleware
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
+app.use(cookieParser());
+app.use(express.static(path.join(__dirname, 'public')));
+
 // session config
 // session config (UPDATED)
 app.use(session({
@@ -56,13 +62,6 @@ app.use(session({
     sameSite: "lax", // important for localhost
   }
 }));
-
-
-// body parser middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
-app.use(cookieParser());
-app.use(express.static(path.join(__dirname, 'public')));
 
 // Passport config
 app.use(passport.initialize());
@@ -98,6 +97,7 @@ passport.use(new GoogleStrategy( {
 
     if(!user){
       // we are signing up the user 
+      console.log(profile);
       const newUser = new userModel({
         googleId: profile.id,
         email: profile.emails[0].value,

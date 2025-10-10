@@ -49,8 +49,8 @@ const Admin = () => {
       }
       try {
         const [userRes, quizRes] = await Promise.all([
-          fetch("http://localhost:8000/api/auth/get_user", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ userId }) }),
-          fetch("http://localhost:8000/api/submit_quiz/get_quiz", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ userId }) }),
+          fetch("http://localhost:8000/api/auth/get_user", { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ userId }) }),
+          fetch("http://localhost:8000/api/submit_quiz/get_quiz", { method: "POST",credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ userId }) }),
         ]);
 
         const userData = await userRes.json();

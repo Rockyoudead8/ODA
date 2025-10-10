@@ -13,24 +13,23 @@ const isLoggedIn = require('../middlewares/mw');
 
 exports.handleGetUser = async (req, res) => {
   try {
-    const { userId } = req.body;
+    console.log(req);
 
-    if (!userId) {
-      return res.status(400).json({ error: "userId is required" });
-    }
-
-    const foundUser = await user.findById(userId);
+    const foundUser = await user.findById(req.user._id);
 
     if (!foundUser) {
+      console.log("user not found");
       return res.status(404).json({ error: "User not found" });
     }
 
     res.status(200).json({ user: foundUser });
   } catch (error) {
+    console.log("server error")
     console.error("Error fetching user:", error);
     res.status(500).json({ error: "Server error" });
   }
 };
+
 
 exports.handleLogin = (req, res) => {
 
