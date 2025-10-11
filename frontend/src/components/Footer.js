@@ -11,11 +11,12 @@ function Footer() {
           <div className="sm:col-span-3 lg:col-span-2">
             <div className="flex items-center text-3xl font-extrabold text-indigo-400 tracking-wider mb-4">
               <MapPin className="w-7 h-7 text-pink-500 mr-2" />
-              <span className="font-sans">VirtualWalk</span>
+              <span className="font-sans">शहरनामा "Shaharnaama"</span>
             </div>
             <p className="mt-3 text-sm text-gray-400 leading-relaxed max-w-sm">
-              Bringing immersive AI-powered experiences to your city.  
-              Explore stories, sounds, and adventures like never before.
+              “हर शहर की अपनी कहानी है — शहरनामा उसे सुनाता है।”
+
+              "Every city has a story — Shaharnaama brings it to life."
             </p>
           </div>
 
@@ -54,7 +55,7 @@ function Footer() {
 
 
         <div className="mt-10 sm:mt-12 border-t border-gray-700 pt-6 text-center text-sm text-gray-500">
-          © {new Date().getFullYear()} VirtualWalk. All rights reserved.
+          © {new Date().getFullYear()} शहरनामा "Shaharnaama"
         </div>
       </div>
     </footer>

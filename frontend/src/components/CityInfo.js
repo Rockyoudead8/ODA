@@ -84,6 +84,7 @@ function CityInfo({ city }) {
       const userId = localStorage.getItem("userId");
       const res = await fetch("http://localhost:8000/api/submit_quiz", {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId, city, userAnswers: userAnswersArray, correctAnswers }),
       });

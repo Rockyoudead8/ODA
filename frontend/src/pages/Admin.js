@@ -76,6 +76,7 @@ const Admin = () => {
         try {
           const res = await fetch('http://localhost:8000/api/geocode-cities', {
             method: 'POST',
+            credentials: "include",
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ cities: userData.visitedCities }),
           });

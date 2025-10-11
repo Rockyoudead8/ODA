@@ -7,7 +7,11 @@ const isLoggedIn = require("../middlewares/mw"); // make sure you have auth midd
 router.post("/", async (req, res) => {
   try {
     const { city, userAnswers, correctAnswers } = req.body;
-    if (!req.user) return res.status(401).json({ error: "Not authenticated" });
+    
+    if (!req.user){
+      console.log("Not authenticated");
+      return res.status(401).json({ error: "Not authenticated" }) };
+
     if (!city || !userAnswers || !correctAnswers) {
       return res.status(400).json({ error: "Missing required data." });
     }

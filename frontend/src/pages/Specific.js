@@ -41,6 +41,7 @@ function Specific() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId, listingId: id }),
+        credentials: "include",
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to update visit");
@@ -136,6 +137,7 @@ function Specific() {
         const res = await fetch("http://localhost:8000/api/upload/image", {
           method: "POST",
           body: formData,
+          credentials: "include",
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Image upload failed");
@@ -149,6 +151,7 @@ function Specific() {
     try {
       const res = await fetch(`http://localhost:8000/api/comments`, {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           listing: id,
