@@ -15,7 +15,7 @@ function SignupPage() {
   const { setUser } = useContext(UserContext);
 
   const handleGoogleLogin = () => {
-    window.location.href = "http://localhost:8000/api/auth/google";
+    window.location.href = `${process.env.REACT_APP_API_BASE_URL}/api/auth/google`;
   };
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -28,7 +28,7 @@ function SignupPage() {
     }
 
     try {
-      const response = await fetch("http://localhost:8000/api/auth/signup", {
+      const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/auth/signup`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

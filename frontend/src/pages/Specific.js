@@ -37,7 +37,7 @@ function Specific() {
       return;
     }
     try {
-      const res = await fetch("http://localhost:8000/api/toggle-visit", {
+      const res = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/toggle-visit`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId, listingId: id }),
@@ -62,8 +62,8 @@ function Specific() {
 
         // 1. Fetch Listing Details and Comments in parallel
         const [listingRes, commentsRes] = await Promise.all([
-          fetch(`http://localhost:8000/api/listing/${id}`),
-          fetch(`http://localhost:8000/api/comments/${id}`)
+          fetch(`${process.env.REACT_APP_API_BASE_URL}/api/listing/${id}`),
+          fetch(`${process.env.REACT_APP_API_BASE_URL}/api/comments/${id}`)
         ]);
 
         if (!listingRes.ok) throw new Error("Failed to fetch listing");
@@ -78,7 +78,7 @@ function Specific() {
         // 2. Fetch Visit Count now that we have the listing title
         if (listingData.title) {
           const visitRes = await fetch(
-            `http://localhost:8000/api/get_visits?cityName=${encodeURIComponent(listingData.title)}`
+            `${process.env.REACT_APP_API_BASE_URL}/api/get_visits?cityName=${encodeURIComponent(listingData.title)}`
           );
           if (visitRes.ok) {
             const visitData = await visitRes.json();
@@ -134,7 +134,7 @@ function Specific() {
       const formData = new FormData();
       formData.append("image", commentImage);
       try {
-        const res = await fetch("http://localhost:8000/api/upload/image", {
+        const res = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/upload/image`, {
           method: "POST",
           body: formData,
           credentials: "include",
@@ -149,7 +149,7 @@ function Specific() {
       }
     }
     try {
-      const res = await fetch(`http://localhost:8000/api/comments`, {
+      const res = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/comments`, {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },

@@ -42,7 +42,7 @@ function Map() {
   useEffect(() => {
     const fetchCities = async () => {
       try {
-        const response = await fetch("http://localhost:8000/api/listing");
+        const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/listing`);
         const data = await response.json();
         
         const listings = Array.isArray(data) ? data : (data.listings || []);

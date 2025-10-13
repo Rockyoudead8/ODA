@@ -33,7 +33,7 @@ const Check = () => {
     if (city) {
       try {
         setLoading(true);
-        const res = await fetch(`http://localhost:8000/api/cities/${encodeURIComponent(city)}`);
+        const res = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/cities/${encodeURIComponent(city)}`);
         if (!res.ok) throw new Error("City not found");
         const data = await res.json();
 

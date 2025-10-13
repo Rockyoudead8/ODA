@@ -14,7 +14,7 @@ function Hero() {
   useEffect(() => {
     const fetchListings = async () => {
       try {
-        const response = await fetch("http://localhost:8000/api/listing");
+        const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/listing`);
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || "Failed to fetch listings");
         setListings(data);

@@ -43,7 +43,7 @@ const Admin = () => {
     const fetchInitialData = async () => {
       try {
         // get logged-in user info from session
-        const userRes = await fetch("http://localhost:8000/api/auth/get_user", {
+        const userRes = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/auth/get_user`, {
           method: "GET", // session-based auth
           credentials: "include",
         });
@@ -52,7 +52,7 @@ const Admin = () => {
         else setError(userData.error || "User not found");
 
         // get quiz results for logged-in user
-        const quizRes = await fetch("http://localhost:8000/api/submit_quiz/get_quiz", {
+        const quizRes = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/submit_quiz/get_quiz`, {
           method: "GET", // adjust backend to use session user
           credentials: "include",
         });
@@ -74,7 +74,7 @@ const Admin = () => {
     const fetchCityCoords = async () => {
       if (userData?.visitedCities?.length > 0) {
         try {
-          const res = await fetch('http://localhost:8000/api/geocode-cities', {
+          const res = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/geocode-cities`, {
             method: 'POST',
             credentials: "include",
             headers: { 'Content-Type': 'application/json' },

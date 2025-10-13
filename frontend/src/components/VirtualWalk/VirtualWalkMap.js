@@ -34,7 +34,7 @@ const VirtualWalkMap = ({ listingId }) => {
             }
 
             try {
-                const response = await fetch(`http://localhost:8000/api/listing/${listingId}`, {
+                const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/listing/${listingId}`, {
                     method: "GET",
                 });
 
