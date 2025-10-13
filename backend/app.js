@@ -25,7 +25,7 @@ const GoogleStrategy = require("passport-google-oauth20").Strategy;
 // require("./auth");
 
 app.use(cors({
-  origin: 'http://localhost:3000', // React's port
+  origin: 'https://oda-1.onrender.com', // React's port
   credentials: true,
 }));
 
