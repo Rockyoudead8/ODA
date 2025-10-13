@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const QuizResult = require("../models/QuizResult");
+const QuizResult = require("../models/quizResult");
 const isLoggedIn = require("../middlewares/mw"); // make sure you have auth middleware
 
 // POST /api/submit_quiz/  (keep this for submitting quizzes)
