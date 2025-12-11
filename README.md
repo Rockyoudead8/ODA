@@ -38,7 +38,7 @@ Users can test their knowledge, earn badges, share reviews, and explore upcoming
 | **Frontend** | React.js, Tailwind CSS, shadcn/ui |
 | **Backend** | Node.js, Express.js |
 | **Other Tools** | RESTful APIs, Nodemon |
-| **Database** | (Add your DB here if applicable — MongoDB / PostgreSQL) |
+| **Database** |  MongoDB |
 
 ---
 
