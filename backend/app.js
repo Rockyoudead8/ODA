@@ -24,6 +24,7 @@ var app = express();
 const GoogleStrategy = require("passport-google-oauth20").Strategy;
 // require("./auth");
 
+// cors 
 app.use(cors({
   origin: 'http://localhost:3000', // React's port
   credentials: true,
