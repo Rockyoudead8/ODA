@@ -83,7 +83,8 @@ exports.handleGenerateinfo = async (req, res) => {
     res.status(200).json(parsedData);
 
   } catch (err) {
-    console.error("Internal error:", err);
+    // console.error("Internal error:", err);
+    console.log("Error generating city info:");
     res.status(500).json({ error: "Internal Server Error." });
   }
 };

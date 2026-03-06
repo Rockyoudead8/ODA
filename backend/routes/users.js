@@ -14,9 +14,11 @@ const jwt = require("jsonwebtoken");
 
 
 // user ki visited cities ko count krne ka code
-router.post("/", async (req, res) => {
+router.post("/",passport.authenticate("jwt", { session: false }), async (req, res) => {
   try {
-    const { userId, listingId } = req.body;
+    const { listingId } = req.body;
+    
+    const userId = req.user._id;
 
     if (!userId || !listingId) {
       return res.status(400).json({ error: "userId and listingId are required" });
@@ -55,7 +57,7 @@ router.post("/", async (req, res) => {
 });
 
 // route to get user info
-router.get("/get_user", c.handleGetUser );
+router.get("/get_user", passport.authenticate("jwt", { session: false }), c.handleGetUser );
 
 // login route
 router.post('/login', c.handleLogin );
@@ -81,7 +83,6 @@ router.get("/status",  passport.authenticate("jwt", { session: false }) , (req, 
   });
 
 });
-
 
 router.get("/", async (req, res) => {
   try {

@@ -2,9 +2,10 @@ const express = require("express");
 const router = express.Router();
 const QuizResult = require("../models/QuizResult");
 const isLoggedIn = require("../middlewares/mw"); // make sure you have auth middleware
+const passport = require("passport");
 
 // POST /api/submit_quiz/  (keep this for submitting quizzes)
-router.post("/", async (req, res) => {
+router.post("/", passport.authenticate("jwt", { session: false }) , async (req, res) => {
   try {
     const { city, userAnswers, correctAnswers } = req.body;
     

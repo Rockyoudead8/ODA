@@ -13,8 +13,7 @@ const jwt = require("jsonwebtoken");
 
 exports.handleGetUser = async (req, res) => {
   try {
-    console.log(req);
-
+    
     const foundUser = await user.findById(req.user._id);
 
     if (!foundUser) {
@@ -25,7 +24,7 @@ exports.handleGetUser = async (req, res) => {
     res.status(200).json({ user: foundUser });
   } catch (error) {
     console.log("server error")
-    console.error("Error fetching user:", error);
+    // console.error("Error fetching user:", error);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -63,7 +62,7 @@ exports.handleLogin = (req, res) => {
         sameSite: "lax",
       });
 
-      return res.status(200).json({ message: "Login successful", token });
+      return res.status(200).json({ message: "Login successful",user, token });
     })(req, res);
     
   } catch (err) {

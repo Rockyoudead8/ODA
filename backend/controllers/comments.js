@@ -6,7 +6,7 @@ const Listing = require("../models/listings");
 
 exports.postComments = async (req, res) => {
   try {
-    const { listing, text, image, userId } = req.body;
+    const { listing, text, image} = req.body;
 
     if (!listing || (!text && !image)) {
       return res.status(400).json({ error: "Listing and comment text or image are required" });
@@ -21,7 +21,7 @@ exports.postComments = async (req, res) => {
       listing,
       text: text || "",
       image: image || "",
-      user: userId,
+      user: req.user._id,
     });
 
     await newComment.save();
