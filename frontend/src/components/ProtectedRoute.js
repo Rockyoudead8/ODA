@@ -6,10 +6,8 @@ function ProtectedRoute({ children }) {
   const { user, loading } = useContext(UserContext);
 
   if (loading) {
-    // Render nothing or a loader while checking auth status
-    return null;
+    return <div>Checking authentication...</div>;
   }
-
   // If there's no user, redirect and pass a message in the state
   if (!user) {
     return (

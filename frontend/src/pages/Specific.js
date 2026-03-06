@@ -17,7 +17,7 @@ function Specific() {
   const [listing, setListing] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [commentText, setCommentText] = useState("");
+  const [commentText, setCommentText] = useState(null);
   const [commentImage, setCommentImage] = useState(null);
   const [comments, setComments] = useState([]);
   const [visited, setVisited] = useState(false);
@@ -31,22 +31,23 @@ function Specific() {
   };
 
   const toggleCityVisit = async () => {
-    const userId = localStorage.getItem("userId");
-    if (!userId) {
-      displayMessage("Please log in to track your visited cities.", true);
-      return;
-    }
+    
     try {
       const res = await fetch("http://localhost:8000/api/toggle-visit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId, listingId: id }),
+        body: JSON.stringify({ listingId: id }),
         credentials: "include",
       });
       const data = await res.json();
+      if (res.status === 401) {
+        displayMessage("Please login first", true);
+        setTimeout(() => navigate("/login"), 1500);
+        return;
+      }
       if (!res.ok) throw new Error(data.error || "Failed to update visit");
       setVisited(data.visited);
-      // setVisitCount(data.count); // The toggle endpoint should return the new total count
+
       displayMessage(data.visited ? "City marked as visited!" : "Visit status removed.", false);
     } catch (err) {
       console.error(err);
@@ -62,8 +63,8 @@ function Specific() {
 
         // 1. Fetch Listing Details and Comments in parallel
         const [listingRes, commentsRes] = await Promise.all([
-          fetch(`http://localhost:8000/api/listing/${id}`),
-          fetch(`http://localhost:8000/api/comments/${id}`)
+          fetch(`http://localhost:8000/api/listing/${id}`, { credentials: "include" }),
+          fetch(`http://localhost:8000/api/comments/${id}`, { credentials: "include" })
         ]);
 
         if (!listingRes.ok) throw new Error("Failed to fetch listing");
@@ -78,7 +79,8 @@ function Specific() {
         // 2. Fetch Visit Count now that we have the listing title
         if (listingData.title) {
           const visitRes = await fetch(
-            `http://localhost:8000/api/get_visits?cityName=${encodeURIComponent(listingData.title)}`
+            `http://localhost:8000/api/get_visits?cityName=${encodeURIComponent(listingData.title)}`,
+            { credentials: "include" }
           );
           if (visitRes.ok) {
             const visitData = await visitRes.json();
@@ -120,57 +122,69 @@ function Specific() {
   };
 
   const handleCommentSubmit = async () => {
-    if (!commentText.trim() && !commentImage) {
-      displayMessage("Comment cannot be empty.", true);
-      return;
-    }
-    const userId = localStorage.getItem("userId");
-    if (!userId) {
-      displayMessage("You must be logged in to comment.", true);
-      return;
-    }
-    let imageUrl = "";
-    if (commentImage) {
-      const formData = new FormData();
-      formData.append("image", commentImage);
-      try {
-        const res = await fetch("http://localhost:8000/api/upload/image", {
-          method: "POST",
-          body: formData,
-          credentials: "include",
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || "Image upload failed");
-        imageUrl = data.url;
-      } catch (err) {
-        console.error(err);
-        displayMessage("Failed to upload image.", true);
-        return;
-      }
-    }
+  if (!commentText.trim() && !commentImage) {
+    displayMessage("Comment cannot be empty.", true);
+    return;
+  }
+
+  let imageUrl = "";
+
+  // Upload image first if exists
+  if (commentImage) {
+    const formData = new FormData();
+    formData.append("image", commentImage);
+
     try {
-      const res = await fetch(`http://localhost:8000/api/comments`, {
+      const res = await fetch("http://localhost:8000/api/upload/image", {
         method: "POST",
+        body: formData,
         credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          listing: id,
-          text: commentText,
-          image: imageUrl,
-          userId,
-        }),
       });
+
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to post comment");
-      setComments([...comments, data]);
-      setCommentText("");
-      setCommentImage(null);
-      displayMessage("Comment submitted successfully!", false);
+      if (!res.ok) throw new Error(data.error || "Image upload failed");
+
+      imageUrl = data.url;
     } catch (err) {
       console.error(err);
-      displayMessage("Failed to submit comment.", true);
+      displayMessage("Failed to upload image.", true);
+      return;
     }
-  };
+  }
+
+  try {
+    const res = await fetch(`http://localhost:8000/api/comments`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        listing: id,
+        text: commentText,
+        image: imageUrl,
+      }),
+    });
+
+    const data = await res.json();
+
+    if (res.status === 401) {
+      displayMessage("Please login to comment.", true);
+      return;
+    }
+
+    if (!res.ok) throw new Error(data.error || "Failed to post comment");
+
+    setComments(prev => [data, ...prev]);
+    setCommentText("");
+    setCommentImage(null);
+
+    displayMessage("Comment submitted successfully!", false);
+
+  } catch (err) {
+    console.error(err);
+    displayMessage("Failed to submit comment.", true);
+  }
+};
+
 
   // Return statement with JSX remains the same
   if (loading) return <p className="text-center mt-20 text-lg font-semibold text-gray-700">Loading City Details...</p>;

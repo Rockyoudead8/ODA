@@ -47,6 +47,7 @@ const Admin = () => {
           method: "GET", // session-based auth
           credentials: "include",
         });
+        
         const userData = await userRes.json();
         if (userRes.ok) setUserData(userData.user);
         else setError(userData.error || "User not found");

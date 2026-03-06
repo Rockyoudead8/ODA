@@ -28,6 +28,7 @@ function CityInfo({ city }) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ city, force_new: true }),
+        credentials: "include",
       });
 
       const result = await res.json();
