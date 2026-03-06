@@ -9,7 +9,7 @@ const quizResult = require("../models/QuizResult");
 const passport = require("passport");
 const localStrategy = require("passport-local");
 const isLoggedIn = require('../middlewares/mw');
-
+const jwt = require("jsonwebtoken");
 
 exports.handleGetUser = async (req, res) => {
   try {
@@ -31,38 +31,43 @@ exports.handleGetUser = async (req, res) => {
 };
 
 
+// login & signup
+
 exports.handleLogin = (req, res) => {
-
-  const { email, password } = req.body;
-
+  
   try {
 
-    if(!req.isAuthenticated()){
-
-    passport.authenticate('local', (err, user, info) => {
-      
+    passport.authenticate("local", {session: false} ,(err, user, info) => {
       if (err) {
-        return res.status(500).json({ message: "Server error" });
+        console.error("Authentication error:", err);
+        return res.status(500).json({ message: "Server error", error: err.message });
       }
 
-      if (!user) {
+      if(!user){
+        console.log("Authentication failed:");
         return res.status(401).json({ message: "Invalid credentials" });
       }
 
-      req.login(user, (err) => {
-        if (err) {
-          return res.status(500).json({ message: "Login failed" });
-        }
+      const payload = {
+        id: user._id,
+      }
 
-        res.status(200).json({ message: "Login successful", user });
+      const token = jwt.sign(
+        payload,
+        process.env.JWT_SECRET,
+      );
+
+      res.cookie("jwt",token,{
+        httpOnly: true,
+        secure: false, // set to true in production with HTTPS
+        sameSite: "lax",
       });
+
+      return res.status(200).json({ message: "Login successful", token });
     })(req, res);
-
-  } else {
-    res.status(200).json({ message: "User already logged in", user: req.user });
-  }
-
+    
   } catch (err) {
+    console.log("server error");
     console.error(err);
     res.status(500).json({ message: "Server error"  , error: err.message});
   }
@@ -73,22 +78,30 @@ exports.handleSignup =  async (req, res) => {
 
   const { name, email, password } = req.body;
 
+  console.log("Signup Route Hit");
+
   try {
 
-    const newUser = new user({ name, email, password });
+    const newUser = new user({ name, email});
     const registeredUser = await user.register(newUser, password);
 
+    const payload = {
+      id: registeredUser._id,
+    }
 
-    // login the user after signup 
-    req.login(registeredUser, (err) => {
-      
-      if (err) {
-        return res.status(500).json({ message: "Login after signup failed" });
-      }
+    const token = jwt.sign(
+      payload,
+      process.env.JWT_SECRET,
+    );
 
-      res.status(201).json({ message: "User created And logged in successfully", user: registeredUser });
-    });
+    res.cookie("jwt",token,{
+        httpOnly: true,
+        secure: false, // set to true in production with HTTPS
+        sameSite: "lax",
+      });
 
+    return res.status(201).json({ message: "Signup successful",  token });
+    
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: err.message });
@@ -101,32 +114,13 @@ exports.handleSignup =  async (req, res) => {
 
 exports.handleLogout = (req, res, next) => {
   console.log("Logout Route Hit");
+  // logout is done from the frontend by clearing the token from localStorage and updating global state, so we just send a success response here
   // console.log("Is Authenticated:", req.isAuthenticated());
+  res.clearCookie("jwt", {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: false // true in production with HTTPS
+  });
 
-  if (req.isAuthenticated()) {
-
-    req.logout((err) => {
-      console.log(err);
-      if (err) return next(err); 
-
-      // destroying the entire session
-      req.session.destroy((err) => {
-        if (err) return next(err);
-
-        // Clear session cookie
-        res.clearCookie("connect.sid");
-
-        console.log("Logout Successful");
-        return res.status(200).json({ message: "Logout Successful" });
-        // return res.status(200).redirect('/login'); 
-
-      });
-
-    });
-
-  } else {
-    console.log("User is not logged in");
-    return res.status(401).json({ message: "User is not logged in" });
-  }
-
+  res.status(200).json({ message: "Logout successful" });
 };

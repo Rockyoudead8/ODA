@@ -22,12 +22,12 @@ const cors = require('cors');
 var isLoggedIn = require('./middlewares/mw');
 var app = express();
 const GoogleStrategy = require("passport-google-oauth20").Strategy;
-// require("./auth");
+const jwt_strategy = require("./config/passport");
 
 // cors // 
 app.use(cors({
   origin: 'http://localhost:3000', // React's port
-  credentials: true,
+  credentials: true
 }));
 
 const mongoose = require('mongoose');
@@ -50,35 +50,13 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// session config
-// session config (UPDATED)
-app.use(session({
-  secret: process.env.SESSION_SECRET || "adhakbaglgagfgfdf",
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    httpOnly: true,
-    secure: false, // set true if using https
-    // secure:true,
-    sameSite: "lax", // important for localhost
-  }
-}));
 
 // Passport config
 app.use(passport.initialize());
-app.use(passport.session());
 
 passport.use(userModel.createStrategy()); // Local strategy (handled by passport-local-mongoose)
-passport.serializeUser((user,done) => done(null,user.id));
-passport.deserializeUser(async (id, done) => { 
-    try {
-        const user = await userModel.findById(id);
-        done(null, user);
-    } catch (err) {
-        done(err, null);
-    }
-});
 
+jwt_strategy(passport); // JWT strategy for protected routes
 
 passport.use(new GoogleStrategy( {
     clientID: process.env.GOOGLE_CLIENT_ID,

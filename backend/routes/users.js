@@ -10,6 +10,7 @@ const quizResult = require("../models/QuizResult");
 const passport = require("passport");
 const localStrategy = require("passport-local");
 const c = require("../controllers/user");
+const jwt = require("jsonwebtoken");
 
 
 // user ki visited cities ko count krne ka code
@@ -66,70 +67,20 @@ router.post('/signup', c.handleSignup );
 // see why just using req.logout is not working?? - IMPORTANT // it is method by passport 
 router.get("/logout", c.handleLogout );
 
-
-//check if user is logged in - route
-// lucky's code old
-
-// router.get("/status", (req, res) => {
-//   if (req.isAuthenticated()) {
-//     return res.status(200).json({ message: "User is logged in", user: req.user });
-//   }
-//   // console.log("Not Authenticated");
-//   res.status(401).json({ message: "User is not logged in" });
-// });
-
 // new code for status
-router.get("/status", (req, res) => {
+router.get("/status",  passport.authenticate("jwt", { session: false }) , (req, res) => {
 
   // Disable browser & proxy caching completely
   res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
   res.set('Pragma', 'no-cache');
   res.set('Expires', '0');
 
-  if (req.isAuthenticated()) {
-    return res.status(200).json({
-      message: "User is logged in",
-      user: req.user,
-    });
-  }
+  return res.status(200).json({
+    message: "User is logged in",
+    user: req.user,
+  });
 
-  res.status(401).json({ message: "User is not logged in" });
 });
-
-//redirects the user to google oauth 
-router.get('/google',passport.authenticate("google",{scope: ["profile","email"]}));
-
-//google redirects the user to this url 
-// router.get("/google/callback", (req,res)=>{
-
-//     try{ 
-
-//       passport.authenticate("google", (err, user, info) =>{
-//       if (err) {
-//         return res.status(500).json({ message: "Server error" });
-//       }
-
-//       if (!user) {
-//         return res.status(401).json({ message: "google login failed" });
-//       }
-
-//       req.login(user, (err) => {
-//         if (err) {
-//           return res.status(500).json({ message: "Login failed" });
-//         }
-
-//         res.status(200).json({ message: "Google login/signup successful", user });
-//       });
-
-
-//     }) }
-//     catch{
-//       console.error(err);
-//       res.status(500).json({ message: err.message });
-//     }
-
-//   });
-
 
 
 router.get("/", async (req, res) => {
@@ -146,12 +97,13 @@ router.get("/", async (req, res) => {
 });
 
 
-// module.exports = router;
-
+//redirects the user to google oauth 
+router.get('/google',passport.authenticate("google",{scope: ["profile","email"] , session: false }));
 
 router.get("/google/callback", (req, res, next) => {
   try {
-    passport.authenticate("google", (err, user, info) => {
+    passport.authenticate("google", {session:false}, (err, user, info) => {
+      
       if (err) {
         console.log("Error with server");
         return res.redirect("http://localhost:5173/login?error=server");
@@ -162,24 +114,34 @@ router.get("/google/callback", (req, res, next) => {
         return res.redirect("http://localhost:5173/login?error=auth_failed");
       }
 
-      req.login(user, (err) => {
-        if (err) {
-          console.log("Login failed");
-          return res.redirect("http://localhost:5173/login?error=login_failed");
-        }
+      const payload = {
+        id: user._id,
+      }
 
-        console.log("Google login/signup successful");
+      const token = jwt.sign(
+        payload,
+        process.env.JWT_SECRET,
+      );
+
+      console.log("Google login/signup successful");
+
+      // store JWT in cookie
+      res.cookie("jwt", token, {
+        httpOnly: true,
+        secure: false, // change to true in production
+        sameSite: "lax"
+      });
+      
+      // cookies are easier to use when we are redirecting 
 
         // Redirect to frontend dashboard (or Hero page)
-        res.redirect("http://localhost:3000/Hero");
-      });
+      res.redirect("http://localhost:3000/Hero");
+
     })(req, res, next);
   } catch (err) {
     console.error(err);
     res.redirect("http://localhost:5173/login?error=exception");
   }
 });
-
-
 
 module.exports = router;

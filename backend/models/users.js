@@ -57,5 +57,7 @@ const userSchema = new mongoose.Schema({
   }
 });
 
+// passport can verify both username and email because of this configuration just pass as "name" from frontend and it will work for both username and email
 userSchema.plugin(passportLocalMongoose, { usernameField: 'email' });
+// userSchema.plugin(passportLocalMongoose, { usernameField: 'name' });
 module.exports = mongoose.model('User', userSchema);
