@@ -282,7 +282,7 @@ function Specific() {
             <h2 className="text-2xl font-bold">Virtual Exploration</h2>
           </div>
           <div className="h-[calc(100%-40px)] rounded-lg overflow-hidden border border-gray-200">
-            <VMap listingId={id} />
+            <VMap city={listing.title} />
           </div>
         </div>
 
