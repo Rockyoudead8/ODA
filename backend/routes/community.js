@@ -41,7 +41,7 @@ router.post(
     parser.single("image"),
     async (req, res) => {
         try {
-
+            console.log("CREATE POST HIT");
             const post = new Post({
                 user: req.user._id,
                 city: req.body.city,
@@ -61,6 +61,7 @@ router.post(
 
 // to show the posts in the feed page of the community section
 router.get("/feed", async (req, res) => {
+    console.log("GET FEED HIT");
     const posts = await Post.find()
         .populate("user")
         .populate("comments.user")

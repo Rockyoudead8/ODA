@@ -18,6 +18,7 @@ function CreatePost() {
     }
 
     await fetch("http://localhost:8000/api/community/create", {
+      credentials: "include",
       method: "POST",
       body: formData
     });
