@@ -11,6 +11,7 @@ var submitRouter = require('./routes/submitQuiz');
 var usersRouter = require('./routes/users');
 var uploadRoutes = require('./routes/upload');
 var commentsRoute = require('./routes/comments');
+var communityRoutes = require('./routes/community');
 var geminiRoute = require('./routes/geminiRoute');
 var QuizRouter = require('./routes/QuizResult');
 const generateSoundRoute = require('./routes/generateSound');
@@ -127,6 +128,8 @@ app.use("/api/upload", uploadRoutes);
 app.use('/api/leaderboard', QuizRouter);
 app.use('/api/geocode-cities',geminiRoute);
 
+// for the commuinity page
+app.use("/api/community", communityRoutes);
 
 
 
