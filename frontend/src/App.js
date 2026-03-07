@@ -7,6 +7,7 @@ import Admin from './pages/Admin'
 import Header from './components/Header'
 import Footer from './components/Footer'
 import LoginPage from './pages/LoginPage'
+import Community from './pages/Community'
 import SignupPage from './pages/SignupPage'
 import 'leaflet/dist/leaflet.css';
 import Explore from './pages/Explore'
@@ -29,8 +30,8 @@ function App() {
             <Admin />
           </ProtectedRoute>} />
           <Route path='/Hero' element={<Hero />} />
-          <Route path='/Explore' element={<ProtectedRoute>
-            <Explore />
+          <Route path='/Community' element={<ProtectedRoute>
+            <Community />
           </ProtectedRoute>} />
           <Route path='/Specific/:id' element={<ProtectedRoute>
             <Specific />

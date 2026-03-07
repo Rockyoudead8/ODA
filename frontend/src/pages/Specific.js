@@ -346,10 +346,10 @@ function Specific() {
         </div>
       </div>
 
-      <div className="bg-white p-6 rounded-2xl shadow-xl border border-indigo-100 ">
+      {/* <div className="bg-white p-6 rounded-2xl shadow-xl border border-indigo-100 ">
         <h2 className="text-2xl font-bold text-indigo-600 mb-4">City Timeline</h2>
         <Timeline city={listing.title} />
-      </div>
+      </div> */}
     </div>
   );
 }
