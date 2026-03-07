@@ -15,6 +15,7 @@ const model = genAI.getGenerativeModel({
 const CACHE_TTL = 1000 * 60 * 60 * 12; // 12 hours
 
 exports.handleGenerateinfo = async (req, res) => {
+  console.log("Received request for city info generation");
   try {
     const { city, force_new } = req.body;
     if (!city) {
@@ -29,7 +30,7 @@ exports.handleGenerateinfo = async (req, res) => {
       return res.status(200).json(existing.data);
     }
 
-    console.log(`Generating new data for ${cityKey}...`);
+   console.log(process.env.GEMINI_API_KEY);
 
     // --- MODIFIED PROMPT ---
     const prompt = `
@@ -71,7 +72,20 @@ exports.handleGenerateinfo = async (req, res) => {
 
     const result = await model.generateContent(prompt);
     const responseText = result.response.text();
-    let parsedData = JSON.parse(responseText);
+
+    let cleaned = responseText
+      .replace(/```json/g, "")
+      .replace(/```/g, "")
+      .trim();
+
+    let parsedData;
+
+    try {
+      parsedData = JSON.parse(cleaned);
+    } catch (parseErr) {
+      console.error("Raw Gemini response:", responseText);
+      throw new Error("Gemini returned invalid JSON");
+    }
 
     await CityData.findOneAndUpdate(
       { city: cityKey },
@@ -83,8 +97,7 @@ exports.handleGenerateinfo = async (req, res) => {
     res.status(200).json(parsedData);
 
   } catch (err) {
-    // console.error("Internal error:", err);
-    console.log("Error generating city info:");
-    res.status(500).json({ error: "Internal Server Error." });
+    console.error("Error generating city info:", err);
+    res.status(500).json({ error: err.message });
   }
 };

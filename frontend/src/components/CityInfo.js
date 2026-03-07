@@ -12,16 +12,8 @@ function CityInfo({ city }) {
   const generateNewInfo = async () => {
     setLoading(true);
     setFetchError(null);
-    setData(null);
     setResult(null);
     setUserAnswers({});
-
-    const userId = localStorage.getItem("userId");
-    if (!userId) {
-      setFetchError("User not logged in");
-      setLoading(false);
-      return;
-    }
 
     try {
       const res = await fetch("http://localhost:8000/api/generate_info", {
@@ -34,7 +26,11 @@ function CityInfo({ city }) {
       const result = await res.json();
       if (!res.ok) throw new Error(result.error || "Server failed.");
 
-      setData(result); // correctAnswerIndex already included
+      setData(result);
+
+      const cacheKey = `cityInfo_${city}`;
+      localStorage.setItem(cacheKey, JSON.stringify(result));
+
     } catch (err) {
       setFetchError(err.message);
     } finally {
@@ -45,16 +41,14 @@ function CityInfo({ city }) {
   useEffect(() => {
     if (!city) return;
 
-    const userId = localStorage.getItem("userId");
-    if (!userId) {
-      setFetchError("User not logged in");
-      return;
-    }
-
-    const cacheKey = `cityInfo_${userId}_${city}`;
+    const cacheKey = `cityInfo_${city}`;
     const cached = localStorage.getItem(cacheKey);
-    if (cached) setData(JSON.parse(cached));
+
+    if (cached) {
+      setData(JSON.parse(cached));
+    }
   }, [city]);
+
 
   const handleAnswerSelect = (qIndex, optionIndex) => {
     setUserAnswers(prev => ({ ...prev, [qIndex]: optionIndex }));
@@ -82,12 +76,16 @@ function CityInfo({ city }) {
     const correctAnswers = data.quizQuestions.map(q => q.correctAnswerIndex);
 
     try {
-      const userId = localStorage.getItem("userId");
+
       const res = await fetch("http://localhost:8000/api/submit_quiz", {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId, city, userAnswers: userAnswersArray, correctAnswers }),
+        body: JSON.stringify({
+          city,
+          userAnswers: userAnswersArray,
+          correctAnswers
+        })
       });
 
       const resultData = await res.json();
@@ -162,10 +160,9 @@ function CityInfo({ city }) {
                   return (
                     <div
                       key={i}
-                      className={`border p-3 rounded-lg shadow-sm ${
-                        result ? (correct ? "border-green-400 bg-green-50" : "border-red-400 bg-red-50") 
-                               : userAnswer != null ? "border-pink-300 bg-pink-50" : "border-indigo-200 bg-indigo-50"
-                      }`}
+                      className={`border p-3 rounded-lg shadow-sm ${result ? (correct ? "border-green-400 bg-green-50" : "border-red-400 bg-red-50")
+                        : userAnswer != null ? "border-pink-300 bg-pink-50" : "border-indigo-200 bg-indigo-50"
+                        }`}
                     >
                       <p className="font-semibold text-gray-800 text-sm mb-2">{i + 1}. {q.question}</p>
                       <div className="space-y-1 text-xs text-gray-600">
@@ -183,10 +180,9 @@ function CityInfo({ city }) {
                             />
                             <label
                               htmlFor={`q${i}o${j}`}
-                              className={`cursor-pointer ${
-                                result && j === q.correctAnswerIndex ? "text-green-700 font-medium"
+                              className={`cursor-pointer ${result && j === q.correctAnswerIndex ? "text-green-700 font-medium"
                                 : result && userAnswer === j && j !== q.correctAnswerIndex ? "text-red-700 font-medium" : ""
-                              }`}
+                                }`}
                             >
                               {opt}
                             </label>
@@ -215,10 +211,9 @@ function CityInfo({ city }) {
               <button
                 onClick={handleSubmitQuiz}
                 disabled={submitting || Object.keys(userAnswers).length !== data.quizQuestions?.length}
-                className={`mt-4 px-4 py-2 text-white rounded-md text-sm transition w-full font-semibold ${
-                  submitting || Object.keys(userAnswers).length !== data.quizQuestions?.length
+                className={`mt-4 px-4 py-2 text-white rounded-md text-sm transition w-full font-semibold ${submitting || Object.keys(userAnswers).length !== data.quizQuestions?.length
                   ? 'bg-gray-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700 shadow-md'
-                }`}
+                  }`}
               >
                 {submitting ? "Submitting..." : "Submit Quiz"}
               </button>
