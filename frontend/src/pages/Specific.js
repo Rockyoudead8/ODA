@@ -31,7 +31,7 @@ function Specific() {
   };
 
   const toggleCityVisit = async () => {
-    
+
     try {
       const res = await fetch("http://localhost:8000/api/toggle-visit", {
         method: "POST",
@@ -87,7 +87,7 @@ function Specific() {
             setVisitCount(visitData.userCount || 0);
           }
         }
-        
+
       } catch (err) {
         setError(err.message);
       } finally {
@@ -122,68 +122,68 @@ function Specific() {
   };
 
   const handleCommentSubmit = async () => {
-  if (!commentText.trim() && !commentImage) {
-    displayMessage("Comment cannot be empty.", true);
-    return;
-  }
+    if (!commentText.trim() && !commentImage) {
+      displayMessage("Comment cannot be empty.", true);
+      return;
+    }
 
-  let imageUrl = "";
+    let imageUrl = "";
 
-  // Upload image first if exists
-  if (commentImage) {
-    const formData = new FormData();
-    formData.append("image", commentImage);
+    // Upload image first if exists
+    if (commentImage) {
+      const formData = new FormData();
+      formData.append("image", commentImage);
+
+      try {
+        const res = await fetch("http://localhost:8000/api/upload/image", {
+          method: "POST",
+          body: formData,
+          credentials: "include",
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Image upload failed");
+
+        imageUrl = data.url;
+      } catch (err) {
+        console.error(err);
+        displayMessage("Failed to upload image.", true);
+        return;
+      }
+    }
 
     try {
-      const res = await fetch("http://localhost:8000/api/upload/image", {
+      const res = await fetch(`http://localhost:8000/api/comments`, {
         method: "POST",
-        body: formData,
         credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          listing: id,
+          text: commentText,
+          image: imageUrl,
+        }),
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Image upload failed");
 
-      imageUrl = data.url;
+      if (res.status === 401) {
+        displayMessage("Please login to comment.", true);
+        return;
+      }
+
+      if (!res.ok) throw new Error(data.error || "Failed to post comment");
+
+      setComments(prev => [data, ...prev]);
+      setCommentText("");
+      setCommentImage(null);
+
+      displayMessage("Comment submitted successfully!", false);
+
     } catch (err) {
       console.error(err);
-      displayMessage("Failed to upload image.", true);
-      return;
+      displayMessage("Failed to submit comment.", true);
     }
-  }
-
-  try {
-    const res = await fetch(`http://localhost:8000/api/comments`, {
-      method: "POST",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        listing: id,
-        text: commentText,
-        image: imageUrl,
-      }),
-    });
-
-    const data = await res.json();
-
-    if (res.status === 401) {
-      displayMessage("Please login to comment.", true);
-      return;
-    }
-
-    if (!res.ok) throw new Error(data.error || "Failed to post comment");
-
-    setComments(prev => [data, ...prev]);
-    setCommentText("");
-    setCommentImage(null);
-
-    displayMessage("Comment submitted successfully!", false);
-
-  } catch (err) {
-    console.error(err);
-    displayMessage("Failed to submit comment.", true);
-  }
-};
+  };
 
 
   // Return statement with JSX remains the same
@@ -275,75 +275,97 @@ function Specific() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div className="bg-white p-6 rounded-2xl shadow-xl border border-indigo-100 h-[60vh] lg:h-[75vh]">
+      {/* VIRTUAL MAP FULL WIDTH */}
+
+      <div className="max-w-7xl mx-auto">
+        <div className="bg-white p-6 rounded-2xl shadow-xl border border-indigo-100 h-[70vh] flex flex-col">
+
           <div className="flex items-center mb-4 text-indigo-600">
             <Globe className="w-6 h-6 mr-2" />
             <h2 className="text-2xl font-bold">Virtual Exploration</h2>
           </div>
-          <div className="h-[calc(100%-40px)] rounded-lg overflow-hidden border border-gray-200">
+
+          <div className="flex-1 rounded-lg overflow-hidden border border-gray-200 min-h-0">
             <VMap city={listing.title} />
           </div>
+
+        </div>
+      </div>
+
+
+      {/* LEADERBOARD + COMMUNITY */}
+
+      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8">
+
+        <div className="bg-white p-6 rounded-2xl shadow-xl border border-indigo-100 h-[70vh]">
+          <Leaderboard listingId={listing._id} />
         </div>
 
-        <div className="space-y-6">
-          <div className="bg-white p-6 rounded-2xl shadow-xl border border-indigo-100 h-[70vh] ">
-            <Leaderboard listingId={listing._id} />
+        <div className="bg-white p-6 rounded-2xl shadow-xl border border-indigo-100">
+          <h3 className="text-xl font-bold text-gray-800 flex items-center mb-4">
+            <MessageCircle className="w-5 h-5 mr-2 text-pink-500" />
+            Community Chatter
+          </h3>
+
+          <div className="mb-6">
+            <h4 className="font-semibold text-gray-700 mb-2">Share Your Thoughts</h4>
+
+            <textarea
+              className="w-full p-3 border border-indigo-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-pink-400 transition"
+              rows={3}
+              placeholder="What did you love about this city?"
+              value={commentText}
+              onChange={(e) => setCommentText(e.target.value)}
+            />
+
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => setCommentImage(e.target.files[0])}
+              className="mt-2"
+            />
+
+            <button
+              className="mt-3 px-6 py-2 bg-indigo-500 text-white font-semibold rounded-lg hover:bg-indigo-600 transition shadow-md shadow-indigo-300"
+              onClick={handleCommentSubmit}
+            >
+              Submit Comment
+            </button>
           </div>
 
-          <div className="bg-white p-6 rounded-2xl shadow-xl border border-indigo-100">
-            <h3 className="text-xl font-bold text-gray-800 flex items-center mb-4">
-              <MessageCircle className="w-5 h-5 mr-2 text-pink-500" />
-              Community Chatter
-            </h3>
+          <div>
+            <h4 className="font-semibold text-gray-700 mb-3 border-t pt-3">
+              Recent Comments ({comments.length})
+            </h4>
 
-            <div className="mb-6">
-              <h4 className="font-semibold text-gray-700 mb-2">Share Your Thoughts</h4>
-              <textarea
-                className="w-full p-3 border border-indigo-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-pink-400 transition"
-                rows={3}
-                placeholder="What did you love about this city?"
-                value={commentText}
-                onChange={(e) => setCommentText(e.target.value)}
-              />
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(e) => setCommentImage(e.target.files[0])}
-                className="mt-2"
-              />
-              <button
-                className="mt-3 px-6 py-2 bg-indigo-500 text-white font-semibold rounded-lg hover:bg-indigo-600 transition shadow-md shadow-indigo-300"
-                onClick={handleCommentSubmit}
-              >
-                Submit Comment
-              </button>
-            </div>
+            {comments.length === 0 ? (
+              <p className="text-gray-500 italic">Be the first to leave a comment!</p>
+            ) : (
+              <div className="max-h-60 overflow-y-auto space-y-3">
+                {comments.map((c) => (
+                  <div key={c._id} className="p-3 bg-gray-50 rounded-lg border border-gray-100">
+                    <p className="text-gray-800">{c.text}</p>
 
-            <div>
-              <h4 className="font-semibold text-gray-700 mb-3 border-t pt-3">Recent Comments ({comments.length})</h4>
-              {comments.length === 0 ? (
-                <p className="text-gray-500 italic">Be the first to leave a comment!</p>
-              ) : (
-                <div className="max-h-60 overflow-y-auto space-y-3">
-                  {comments.map((c) => (
-                    <div key={c._id} className="p-3 bg-gray-50 rounded-lg border border-gray-100">
-                      <p className="text-gray-800">{c.text}</p>
-                      {c.image && (
-                        <img
-                          src={c.image}
-                          alt="comment"
-                          className="mt-2 max-h-48 w-full object-cover rounded-md"
-                        />
-                      )}
-                      <p className="text-xs text-gray-400 mt-1">— {c.user?.name || "Anonymous"}</p>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+                    {c.image && (
+                      <img
+                        src={c.image}
+                        alt="comment"
+                        className="mt-2 max-h-48 w-full object-cover rounded-md"
+                      />
+                    )}
+
+                    <p className="text-xs text-gray-400 mt-1">
+                      — {c.user?.name || "Anonymous"}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+
           </div>
+
         </div>
+
       </div>
 
       {/* <div className="bg-white p-6 rounded-2xl shadow-xl border border-indigo-100 ">

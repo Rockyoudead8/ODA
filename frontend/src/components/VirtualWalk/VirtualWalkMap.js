@@ -1,296 +1,194 @@
-// import React, { useState, useCallback, useEffect } from 'react';
-// import { APIProvider, Map, Marker } from '@vis.gl/react-google-maps';
-// import { computeDestinationPoint } from 'geolib';
-// import { GoogleGenerativeAI } from "@google/generative-ai";
-
-// import Controls from './Controls';
-// import InfoPanel from './InfoPanel';
-
-// // Initialize Gemini API
-// const genAI = new GoogleGenerativeAI(process.env.REACT_APP_GEMINI_API_KEY);
-// const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-
-// const VirtualWalkMap = ({ listingId }) => { 
-
-
-//     const defaultPosition = { lat: 25.4358, lng: 81.8463 };
-//     const [initialPosition, setInitialPosition] = useState(defaultPosition);
-
-//     const [position, setPosition] = useState(defaultPosition); 
-
-
-//     const [isDataLoading, setIsDataLoading] = useState(true); 
-
-//     const [info, setInfo] = useState('Loading map data...');
-//     const [isLoading, setIsLoading] = useState(false);
-
-
-//     useEffect(() => {
-//         const fetchInitialData = async () => {
-//             if (!listingId) { 
-//                 setIsDataLoading(false);
-//                 setInfo('Listing ID missing. Defaulting to Prayagraj.');
-//                 return;
-//             }
-
-//             try {
-//                 const response = await fetch(`http://localhost:8000/api/listing/${listingId}`, {
-//                     method: "GET",
-//                 });
-
-//                 const data = await response.json();
-
-
-//                 if (response.ok && data.lat && data.lng) {
-//                     const newPos = { 
-//                         lat: data.lat, 
-//                         lng: data.lng,
-//                     };
-
-//                     setInitialPosition(newPos);
-//                     setPosition(newPos); 
-//                     setInfo(`Cursor is at the starting point of ${data.title || 'the city'}. Use the controls to move.`);
-//                 } else {
-//                     console.error("Data structure error (lat/lng missing) or bad response. Defaulting to Prayagraj.");
-//                     setInfo("Could not fetch city data. Starting at default location.");
-//                 }
-//             } catch (error) {
-//                 console.error("Network error fetching listing data:", error);
-//                 setInfo("Network error. Starting at default location.");
-//             } finally {
-//                 setIsDataLoading(false);
-//             }
-//         };
-
-//         fetchInitialData();
-//     }, [listingId]); 
-
-
-
-//     const fetchLocationInfo = useCallback(async (lat, lng) => {
-//         setIsLoading(true);
-//         const prompt = `Provide a brief description of the location at latitude ${lat} and longitude ${lng}. Mention nearby heritage sites, landmarks, or interesting places within 200 meters. Keep it concise.`;
-
-//         try {
-//             const result = await model.generateContent(prompt);
-//             const response = await result.response;
-//             setInfo(response.text());
-//         } catch (error) {
-//             console.error("Error fetching from Gemini:", error);
-//             setInfo("Could not fetch information for this location.");
-//         } finally {
-//             setIsLoading(false);
-//         }
-//     }, []);
-
-//     const handleMove = useCallback((bearing, distance) => {
-//         const newPosition = computeDestinationPoint(
-//             { latitude: position.lat, longitude: position.lng },
-//             distance,
-//             bearing
-//         );
-//         const newPos = { lat: newPosition.latitude, lng: newPosition.longitude };
-//         setPosition(newPos);
-//         fetchLocationInfo(newPos.lat, newPos.lng);
-//     }, [position, fetchLocationInfo]);
-
-
-
-//     if (isDataLoading) {
-//         return <div style={{height: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center'}}>
-//             <p>Loading initial city location...</p>
-//         </div>;
-//     }
-
-//     return (
-//         <APIProvider apiKey={process.env.REACT_APP_GOOGLE_MAPS_API_KEY}>
-//             <div style={{
-//                 height: "100%",
-//                 width: "100%",
-//                 display: 'flex',
-//                 flexDirection: 'column'
-//             }}>
-//                 <div style={{
-//                     position: 'relative',
-//                     height: '75%',
-//                     width: '100%',
-//                     marginBottom: '10px'
-//                 }}>
-
-//                     <Map center={position}
-//                         zoom={16}
-//                         mapId="YOUR_MAP_ID"
-//                         className={`w-full h-full`}
-//                     >
-//                         <Marker position={position} />
-//                     </Map>
-//                     <Controls onMove={handleMove} isLoading={isLoading} />
-//                 </div>
-//                 <InfoPanel info={info} isLoading={isLoading} />
-//             </div>
-//         </APIProvider>
-//     );
-// };
-
-// export default VirtualWalkMap;
-
-import markerIcon from "leaflet/dist/images/marker-icon.png";
-import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
-import markerShadow from "leaflet/dist/images/marker-shadow.png";
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import Map, { Marker, Popup, Source, Layer } from "react-map-gl/mapbox";
+import "mapbox-gl/dist/mapbox-gl.css";
 import { useEffect, useState } from "react";
-import L from "leaflet";
-import { useMap } from "react-leaflet";
 
-const touristIcon = new L.Icon({
-    iconUrl: "https://cdn-icons-png.flaticon.com/512/684/684908.png",
-    iconSize: [32, 32],
-});
+const MAPBOX_TOKEN = process.env.REACT_APP_MAPBOX_API;
 
-delete L.Icon.Default.prototype._getIconUrl;
+function buildRoute(places) {
 
-L.Icon.Default.mergeOptions({
-    iconRetinaUrl: markerIcon2x,
-    iconUrl: markerIcon,
-    shadowUrl: markerShadow,
-});
-function RecenterMap({ position }) {
-    const map = useMap();
+    if (!places.length) return [];
 
-    useEffect(() => {
-        map.setView(position, 15);
-    }, [position]);
+    const remaining = [...places];
+    const route = [remaining.shift()];
 
-    return null;
+    while (remaining.length) {
+
+        const last = route[route.length - 1];
+        const [lng1, lat1] = last.geometry.coordinates;
+
+        let nearestIndex = 0;
+        let nearestDist = Infinity;
+
+        remaining.forEach((place, i) => {
+
+            const [lng2, lat2] = place.geometry.coordinates;
+
+            const dist = Math.sqrt(
+                (lat2 - lat1) ** 2 + (lng2 - lng1) ** 2
+            );
+
+            if (dist < nearestDist) {
+                nearestDist = dist;
+                nearestIndex = i;
+            }
+
+        });
+
+        route.push(remaining.splice(nearestIndex, 1)[0]);
+    }
+
+    return route;
 }
-const defaultPosition = [26.9124, 75.7873]; // Jaipur fallback
 
 function VirtualWalkMap({ city }) {
-    const [position, setPosition] = useState([26.9124, 75.7873]);
+
+    const [viewState, setViewState] = useState({
+        latitude: 26.9124,
+        longitude: 75.7873,
+        zoom: 13
+    });
+
     const [places, setPlaces] = useState([]);
     const [selectedPlace, setSelectedPlace] = useState(null);
+    const [placeImages, setPlaceImages] = useState({});
+    const orderedPlaces = buildRoute(places);
+
+    const fetchPlaceImage = async (placeName) => {
+
+        try {
+
+            const res = await fetch(
+                `https://api.unsplash.com/search/photos?query=${encodeURIComponent(placeName)}&per_page=1&client_id=${process.env.REACT_APP_UNSPLASH_KEY}`
+            );
+
+            const data = await res.json();
+
+            return data.results?.[0]?.urls?.small || null;
+
+        } catch (err) {
+            console.error("Unsplash fetch error", err);
+            return null;
+        }
+
+    };
+    useEffect(() => {
+
+        const loadImages = async () => {
+
+            const images = {};
+
+            for (const place of places) {
+
+                const name = place.properties.name;
+
+                const img = await fetchPlaceImage(name);
+
+                images[name] = img;
+
+            }
+
+            setPlaceImages(images);
+
+        };
+
+        if (places.length) {
+            loadImages();
+        }
+
+    }, [places]);
+
+    const routeCoordinates = orderedPlaces.map(
+        p => p.geometry.coordinates
+    );
+
     useEffect(() => {
         if (!city) return;
-
         fetchCoordinates(city);
     }, [city]);
 
+    const fetchCoordinates = async (cityName) => {
+
+        const res = await fetch(
+            `https://api.geoapify.com/v1/geocode/search?text=${cityName}&limit=1&apiKey=${process.env.REACT_APP_GEOAPIFY_KEY}`
+        );
+
+        const data = await res.json();
+
+        if (!data.features.length) return;
+
+        const coords = data.features[0].geometry.coordinates;
+
+        setViewState({
+            latitude: coords[1],
+            longitude: coords[0],
+            zoom: 13
+        });
+
+        fetchPlaces(cityName, coords[1], coords[0]);
+    };
+
+    const fetchPlaces = async (city, lat, lng) => {
+
+        const res = await fetch(
+            `http://localhost:8000/api/places/${city}/${lat}/${lng}`
+        );
+
+        const data = await res.json();
+
+        setPlaces(Array.isArray(data) ? data.slice(0, 10) : []);
+    };
 
     const goToPlace = (place) => {
 
         const coords = place.geometry.coordinates;
 
-        const lat = coords[1];
-        const lng = coords[0];
+        setViewState({
+            longitude: coords[0],
+            latitude: coords[1],
+            zoom: 17,
+            pitch: 65,
+            bearing: 40,
+            duration: 2000
+        });
 
-        setPosition([lat, lng]);
-        setSelectedPlace(place);
-
-    };
-
-    const fetchCoordinates = async (cityName) => {
-        try {
-
-            const res = await fetch(
-                `https://api.geoapify.com/v1/geocode/search?text=${cityName}&limit=1&apiKey=6d21db9365ab4c078fd858469f66813b`
-            );
-
-            const data = await res.json();
-
-            if (!data.features || data.features.length === 0) return;
-
-            const coords = data.features[0].geometry.coordinates;
-
-            const lat = coords[1];
-            const lng = coords[0];
-
-            setPosition([lat, lng]);
-
-            fetchPlaces(cityName, lat, lng);
-
-        } catch (err) {
-            console.error("Geocoding failed", err);
-        }
-    };
-
-    const fetchPlaces = async (city, lat, lng) => {
-
-        try {
-
-            const res = await fetch(
-                `http://localhost:8000/api/places/${city}/${lat}/${lng}`
-            );
-
-            const data = await res.json();
-            console.log("PLACES FROM BACKEND:", data);
-            setPlaces(Array.isArray(data) ? data : []);
-
-        } catch (err) {
-            console.error("Error fetching places", err);
-        }
     };
 
     return (
 
-        <div style={{ display: "flex", height: "100%", width: "100%" }}>
-
-            {/* MAP */}
-            <div style={{ flex: 3 }}>
-                <MapContainer center={position} zoom={13} style={{ height: "100%", width: "100%" }}>
-
-                    <TileLayer
-                        attribution='© OpenStreetMap contributors © CARTO'
-                        url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
-                    />
-
-                    <RecenterMap position={position} />
-
-                    {places
-                        .filter(p => p?.geometry?.coordinates)
-                        .map((place, index) => {
-
-                            const coords = place.geometry.coordinates;
-
-                            return (
-                                <Marker
-                                    key={place.properties.place_id || index}
-                                    position={[coords[1], coords[0]]}
-                                    icon={touristIcon}
-                                >
-                                    <Popup>
-                                        <strong>{place.properties.name}</strong>
-                                        <br />
-                                        {place.properties.categories?.[0]}
-                                    </Popup>
-                                </Marker>
-                            );
-
-                        })}
-                </MapContainer>
-            </div>
-
+        <div style={{
+            display: "flex",
+            width: "100%",
+            height: "100%"
+        }}>
 
             {/* SIDEBAR */}
-            <div style={{
-                flex: 1,
-                borderLeft: "1px solid #ddd",
-                overflowY: "auto",
-                padding: "15px",
-                background: "#fafafa"
-            }}>
 
-                <h3 style={{ marginBottom: "10px" }}>
-                    Famous Places in {city}
-                </h3>
+            <div
+                style={{
+                    width: "340px",
+                    background: "linear-gradient(180deg,#111,#0a0a0a)",
+                    color: "white",
+                    padding: "22px",
+                    overflowY: "auto",
+                    borderRight: "1px solid rgba(255,255,255,0.06)"
+                }}
+            >
 
-                {places.length === 0 && (
-                    <p>No places found.</p>
-                )}
+                <h2
+                    style={{
+                        marginBottom: "20px",
+                        fontSize: "20px",
+                        fontWeight: "700",
+                        letterSpacing: "0.5px"
 
-                {places.map((place, index) => {
+                    }}
+                >
+                    Explore {city}
+                </h2>
+
+                {orderedPlaces.map((place, index) => {
 
                     const name = place.properties.name || "Unknown Place";
-                    const category = place.properties.categories?.[0] || "place";
 
                     return (
 
@@ -298,22 +196,108 @@ function VirtualWalkMap({ city }) {
                             key={index}
                             onClick={() => goToPlace(place)}
                             style={{
-                                padding: "10px",
-                                marginBottom: "8px",
+                                display: "flex",
+                                gap: "14px",
+                                marginBottom: "14px",
+                                padding: "12px",
+                                borderRadius: "14px",
+                                background: "#181818",
                                 cursor: "pointer",
-                                borderRadius: "8px",
-                                background: "#fff",
-                                border: "1px solid #eee"
+                                transition: "all 0.25s ease",
+                                boxShadow: "0 3px 8px rgba(0,0,0,0.35)"
+                            }}
+
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.background = "#222";
+                                e.currentTarget.style.transform = "translateY(-2px)";
+                            }}
+
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.background = "#181818";
+                                e.currentTarget.style.transform = "translateY(0px)";
                             }}
                         >
 
-                            <strong>{name}</strong>
+                            {/* IMAGE */}
 
-                            <div style={{
-                                fontSize: "12px",
-                                color: "#777"
-                            }}>
-                                {category}
+                            <div style={{ position: "relative" }}>
+
+                                <img
+                                    src={
+                                        placeImages[name] ||
+                                        "https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=200"
+                                    }
+                                    alt={name}
+                                    loading="lazy"
+                                    style={{
+                                        width: "70px",
+                                        height: "70px",
+                                        borderRadius: "12px",
+                                        objectFit: "cover",
+                                        boxShadow: "0 4px 10px rgba(0,0,0,0.5)"
+                                    }}
+                                />
+
+                                {/* STOP BADGE */}
+
+                                <div
+                                    style={{
+                                        position: "absolute",
+                                        top: "-6px",
+                                        left: "-6px",
+                                        background: "#ff3b30",
+                                        color: "white",
+                                        fontSize: "11px",
+                                        fontWeight: "600",
+                                        width: "22px",
+                                        height: "22px",
+                                        borderRadius: "50%",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        boxShadow: "0 2px 6px rgba(0,0,0,0.5)"
+                                    }}
+                                >
+                                    {index + 1}
+                                </div>
+
+                            </div>
+
+                            {/* TEXT CONTENT */}
+
+                            <div style={{ flex: 1 }}>
+
+                                <div
+                                    style={{
+                                        fontWeight: "600",
+                                        fontSize: "15px",
+                                        lineHeight: "1.2"
+                                    }}
+                                >
+                                    {name}
+                                </div>
+
+                                <div
+                                    style={{
+                                        fontSize: "12px",
+                                        color: "#9ca3af",
+                                        marginTop: "6px",
+                                        textTransform: "capitalize"
+                                    }}
+                                >
+                                    {place.properties.categories?.[0] || "Tourist attraction"}
+                                </div>
+
+                                <div
+                                    style={{
+                                        fontSize: "11px",
+                                        color: "#6b7280",
+                                        marginTop: "4px"
+                                    }}
+                                >
+                                    Stop {index + 1}
+                                </div>
+
                             </div>
 
                         </div>
@@ -324,8 +308,130 @@ function VirtualWalkMap({ city }) {
 
             </div>
 
-        </div>
 
+            {/* MAP */}
+
+            <div style={{ flex: 1 }}>
+
+                <Map
+                    {...viewState}
+                    onMove={evt => setViewState(evt.viewState)}
+                    style={{ width: "100%", height: "100%" }}
+                    mapStyle="mapbox://styles/mapbox/satellite-streets-v12"
+                    mapboxAccessToken={MAPBOX_TOKEN}
+                    terrain={{ source: "mapbox-dem", exaggeration: 1.5 }}
+                >
+                    <Source
+                        id="mapbox-dem"
+                        type="raster-dem"
+                        url="mapbox://mapbox.mapbox-terrain-dem-v1"
+                        tileSize={512}
+                        maxzoom={14}
+                    />
+
+                    <Layer
+                        id="3d-buildings"
+                        source="composite"
+                        source-layer="building"
+                        filter={["==", "extrude", "true"]}
+                        type="fill-extrusion"
+                        minzoom={15}
+                        paint={{
+                            "fill-extrusion-color": "#aaa",
+                            "fill-extrusion-height": ["get", "height"],
+                            "fill-extrusion-base": ["get", "min_height"],
+                            "fill-extrusion-opacity": 0.6
+                        }}
+                    />
+
+                    {/* MARKERS */}
+
+                    {orderedPlaces.map((place, index) => {
+
+                        const coords = place.geometry.coordinates;
+
+                        return (
+
+                            <Marker
+                                key={index}
+                                longitude={coords[0]}
+                                latitude={coords[1]}
+                            >
+                                <div
+                                    onClick={() => setSelectedPlace(place)}
+                                    style={{
+                                        background: "red",
+                                        color: "white",
+                                        borderRadius: "50%",
+                                        width: "26px",
+                                        height: "26px",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        fontSize: "12px",
+                                        cursor: "pointer"
+                                    }}
+                                >
+                                    {index + 1}
+                                </div>
+                            </Marker>
+
+                        );
+
+                    })}
+
+                    {/* POPUP */}
+
+                    {selectedPlace && (
+
+                        <Popup
+                            longitude={selectedPlace.geometry.coordinates[0]}
+                            latitude={selectedPlace.geometry.coordinates[1]}
+                            onClose={() => setSelectedPlace(null)}
+                        >
+
+                            <strong>
+                                {selectedPlace.properties.name}
+                            </strong>
+
+                        </Popup>
+
+                    )}
+
+                    {/* ROUTE LINE */}
+
+                    {routeCoordinates.length > 1 && (
+
+                        <Source
+                            id="route"
+                            type="geojson"
+                            data={{
+                                type: "Feature",
+                                geometry: {
+                                    type: "LineString",
+                                    coordinates: routeCoordinates
+                                }
+                            }}
+                        >
+
+                            <Layer
+                                id="routeLine"
+                                type="line"
+                                paint={{
+                                    "line-color": "#ff0000",
+                                    "line-width": 4
+                                }}
+                            />
+
+                        </Source>
+
+                    )}
+
+                </Map>
+
+            </div>
+
+        </div>
     );
 }
 

@@ -25,7 +25,7 @@ router.get("/:city/:lat/:lng", async (req, res) => {
     console.log("Fetching new places from Geoapify");
 
     const response = await fetch(
-      `https://api.geoapify.com/v2/places?categories=tourism,tourism.sights,tourism.attraction,entertainment&filter=circle:${lng},${lat},20000&limit=30&apiKey=6d21db9365ab4c078fd858469f66813b`
+      `https://api.geoapify.com/v2/places?categories=tourism,tourism.sights,tourism.attraction,entertainment&filter=circle:${lng},${lat},10000&limit=30&apiKey=6d21db9365ab4c078fd858469f66813b`
     );
 
     const data = await response.json();
