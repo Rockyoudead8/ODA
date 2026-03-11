@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import Map, { Marker } from "react-map-gl/mapbox";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { BarChart3 } from "lucide-react";
@@ -11,6 +11,8 @@ function MapView() {
   const [loading, setLoading] = useState(true);
   const [activeCity, setActiveCity] = useState(null);
 
+  const interactionTimeout = useRef(null);
+
   const [viewState, setViewState] = useState({
     longitude: 0,
     latitude: 20,
@@ -18,6 +20,43 @@ function MapView() {
     pitch: 35
   });
 
+  const [userInteracting, setUserInteracting] = useState(false);
+
+  // 🌍 AUTO ROTATION
+  useEffect(() => {
+
+    const rotate = () => {
+
+      if (!userInteracting) {
+        setViewState(prev => ({
+          ...prev,
+          longitude: prev.longitude + 0.01
+        }));
+      }
+
+    };
+
+    const interval = setInterval(rotate, 50);
+
+    return () => clearInterval(interval);
+
+  }, [userInteracting]);
+
+  const handleUserInteraction = () => {
+
+    setUserInteracting(true);
+
+    if (interactionTimeout.current) {
+      clearTimeout(interactionTimeout.current);
+    }
+
+    interactionTimeout.current = setTimeout(() => {
+      setUserInteracting(false);
+    }, 3000);
+
+  };
+
+  // 🔥 FIXED TOP VISITED CITIES LOGIC
   useEffect(() => {
 
     const fetchCities = async () => {
@@ -31,16 +70,42 @@ function MapView() {
           ? data
           : (data.listings || []);
 
-        const citiesWithCoords = listings
-          .map((listing) => ({
-            name: listing.title,
-            visits: listing.visits || 0,
-            lat: listing.lat,
-            lng: listing.lng
-          }))
-          .filter(city => city.visits > 0 && city.lat && city.lng);
+        // fetch visit count for each city
+        const citiesWithVisits = await Promise.all(
+          listings.map(async (listing) => {
 
-        const top3 = citiesWithCoords
+            try {
+
+              const res = await fetch(
+                `http://localhost:8000/api/get_visits?cityName=${encodeURIComponent(listing.title)}`
+              );
+
+              const visitData = await res.json();
+
+              return {
+                name: listing.title,
+                visits: visitData.userCount || 0,
+                lat: listing.lat,
+                lng: listing.lng
+              };
+
+            } catch {
+              return {
+                name: listing.title,
+                visits: 0,
+                lat: listing.lat,
+                lng: listing.lng
+              };
+            }
+
+          })
+        );
+
+        const filtered = citiesWithVisits.filter(
+          city => city.visits > 0 && city.lat && city.lng
+        );
+
+        const top3 = filtered
           .sort((a, b) => b.visits - a.visits)
           .slice(0, 3);
 
@@ -58,12 +123,11 @@ function MapView() {
 
   }, []);
 
-
   const flyToCity = (city) => {
 
     setActiveCity(city.name);
 
-    setViewState((prev) => ({
+    setViewState(prev => ({
       ...prev,
       longitude: city.lng,
       latitude: city.lat,
@@ -83,7 +147,11 @@ function MapView() {
 
         <Map
           {...viewState}
+          projection="globe"
           onMove={(evt) => setViewState(evt.viewState)}
+          onMouseDown={handleUserInteraction}
+          onWheel={handleUserInteraction}
+          onTouchStart={handleUserInteraction}
           style={{ width: "100%", height: "100%" }}
           mapStyle="mapbox://styles/mapbox/satellite-streets-v12"
           mapboxAccessToken={MAPBOX_TOKEN}
@@ -92,7 +160,7 @@ function MapView() {
           {topCities.map((city, index) => (
 
             <Marker
-              key={index}
+              key={city.name}
               longitude={city.lng}
               latitude={city.lat}
             >
@@ -108,16 +176,7 @@ function MapView() {
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  fontSize: "13px",
-                  boxShadow:
-                    activeCity === city.name
-                      ? "0 0 20px rgba(236,72,153,0.9)"
-                      : "0 3px 10px rgba(0,0,0,0.4)",
-                  transform:
-                    activeCity === city.name
-                      ? "scale(1.25)"
-                      : "scale(1)",
-                  transition: "all 0.25s"
+                  fontSize: "13px"
                 }}
               >
                 {index + 1}
@@ -130,7 +189,6 @@ function MapView() {
         </Map>
 
       </div>
-
 
       {/* SIDEBAR */}
 
@@ -154,24 +212,14 @@ function MapView() {
             {topCities.map((city, index) => (
 
               <li
-                key={index}
+                key={city.name}
                 onClick={() => flyToCity(city)}
-                className={`flex justify-between items-center text-sm font-medium p-3 rounded-md cursor-pointer transition
-                ${activeCity === city.name
-                    ? "bg-pink-100"
-                    : "bg-indigo-50 hover:bg-indigo-100"
-                  }`}
+                className="flex justify-between items-center text-sm font-medium p-3 rounded-md cursor-pointer bg-indigo-50 hover:bg-indigo-100"
               >
 
                 <span className="flex items-center text-indigo-800">
 
-                  <span
-                    className={`w-6 h-6 mr-2 rounded-full text-xs font-bold flex items-center justify-center
-                    ${index === 0
-                        ? "bg-pink-500 text-white"
-                        : "bg-pink-200 text-pink-700"
-                      }`}
-                  >
+                  <span className="w-6 h-6 mr-2 rounded-full text-xs font-bold flex items-center justify-center bg-pink-500 text-white">
                     {index + 1}
                   </span>
 

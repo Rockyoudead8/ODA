@@ -17,6 +17,7 @@ const Leaderboard = ({ listingId }) => {
             try {
                 const res = await fetch(`http://localhost:8000/api/leaderboard/${listingId}`);
                 const data = await res.json();
+                console.log("Leaderboard API data:", data);
                 if (!res.ok) throw new Error(data.error || "Failed to fetch leaderboard");
 
                 setLeaderboard(data);

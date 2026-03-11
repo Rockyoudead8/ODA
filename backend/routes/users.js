@@ -14,15 +14,54 @@ const jwt = require("jsonwebtoken");
 
 
 // user ki visited cities ko count krne ka code
-router.post("/",passport.authenticate("jwt", { session: false }), async (req, res) => {
-  try {
-    const { listingId } = req.body;
-    
-    const userId = req.user._id;
+// router.post("/",passport.authenticate("jwt", { session: false }), async (req, res) => {
+//   try {
+//     const { listingId } = req.body;
 
-    if (!userId || !listingId) {
-      return res.status(400).json({ error: "userId and listingId are required" });
-    }
+//     const userId = req.user._id;
+
+//     if (!userId || !listingId) {
+//       return res.status(400).json({ error: "userId and listingId are required" });
+//     }
+
+//     const listing = await listings.findById(listingId);
+//     if (!listing) return res.status(404).json({ error: "Listing not found" });
+
+//     const cityName = listing.title;
+
+//     const foundUser = await user.findById(userId);
+//     if (!foundUser) return res.status(404).json({ error: "User not found" });
+
+//     const alreadyVisited = foundUser.visitedCities?.includes(cityName);
+
+//     if (alreadyVisited) {
+//       foundUser.visitedCities = foundUser.visitedCities.filter((city) => city !== cityName);
+//       foundUser.citiesVisited = Math.max(0, (foundUser.citiesVisited || 0) - 1);
+//     } else {
+//       foundUser.visitedCities = [...(foundUser.visitedCities || []), cityName];
+//       foundUser.citiesVisited = (foundUser.citiesVisited || 0) + 1;
+//     }
+
+//     await foundUser.save();
+
+//     res.json({
+//       message: "City visit status updated",
+//       visited: !alreadyVisited,
+//       count: foundUser.citiesVisited,
+//       city: cityName,
+//     });
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).json({ error: "Server error" });
+//   }
+// });
+
+// toggle visit
+router.post("/toggle-visit", passport.authenticate("jwt", { session: false }), async (req, res) => {
+  try {
+
+    const { listingId } = req.body;
+    const userId = req.user._id;
 
     const listing = await listings.findById(listingId);
     if (!listing) return res.status(404).json({ error: "Listing not found" });
@@ -30,47 +69,74 @@ router.post("/",passport.authenticate("jwt", { session: false }), async (req, re
     const cityName = listing.title;
 
     const foundUser = await user.findById(userId);
-    if (!foundUser) return res.status(404).json({ error: "User not found" });
-
-    const alreadyVisited = foundUser.visitedCities?.includes(cityName);
+    const alreadyVisited = foundUser.visitedCities.includes(cityName);
 
     if (alreadyVisited) {
-      foundUser.visitedCities = foundUser.visitedCities.filter((city) => city !== cityName);
-      foundUser.citiesVisited = Math.max(0, (foundUser.citiesVisited || 0) - 1);
+      foundUser.visitedCities = foundUser.visitedCities.filter(
+        (city) => city !== cityName
+      );
     } else {
-      foundUser.visitedCities = [...(foundUser.visitedCities || []), cityName];
-      foundUser.citiesVisited = (foundUser.citiesVisited || 0) + 1;
+      foundUser.visitedCities.push(cityName);
     }
+
+    foundUser.citiesVisited = foundUser.visitedCities.length;
 
     await foundUser.save();
 
     res.json({
-      message: "City visit status updated",
-      visited: !alreadyVisited,
-      count: foundUser.citiesVisited,
-      city: cityName,
+      visited: !alreadyVisited
     });
+
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Server error" });
   }
 });
 
+
+// check if user visited city
+router.get("/check-visit", passport.authenticate("jwt", { session: false }), async (req, res) => {
+  const { cityName } = req.query;
+
+  const foundUser = await user.findById(req.user._id);
+
+  const visited = foundUser.visitedCities.includes(cityName);
+
+  res.json({ visited });
+});
+
+
+// count users who visited city
+router.get("/get_visits", async (req, res) => {
+  try {
+
+    const { cityName } = req.query;
+
+    const count = await user.countDocuments({ visitedCities: cityName });
+
+    res.json({ cityName, userCount: count });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
 // route to get user info
-router.get("/get_user", passport.authenticate("jwt", { session: false }), c.handleGetUser );
+router.get("/get_user", passport.authenticate("jwt", { session: false }), c.handleGetUser);
 
 // login route
-router.post('/login', c.handleLogin );
+router.post('/login', c.handleLogin);
 
 // signup route
-router.post('/signup', c.handleSignup );
+router.post('/signup', c.handleSignup);
 
 // logout route 
 // see why just using req.logout is not working?? - IMPORTANT // it is method by passport 
-router.get("/logout", c.handleLogout );
+router.get("/logout", c.handleLogout);
 
 // new code for status
-router.get("/status",  passport.authenticate("jwt", { session: false }) , (req, res) => {
+router.get("/status", passport.authenticate("jwt", { session: false }), (req, res) => {
 
   // Disable browser & proxy caching completely
   res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
@@ -99,12 +165,12 @@ router.get("/", async (req, res) => {
 
 
 //redirects the user to google oauth 
-router.get('/google',passport.authenticate("google",{scope: ["profile","email"] , session: false }));
+router.get('/google', passport.authenticate("google", { scope: ["profile", "email"], session: false }));
 
 router.get("/google/callback", (req, res, next) => {
   try {
-    passport.authenticate("google", {session:false}, (err, user, info) => {
-      
+    passport.authenticate("google", { session: false }, (err, user, info) => {
+
       if (err) {
         console.log("Error with server");
         return res.redirect("http://localhost:5173/login?error=server");
@@ -132,10 +198,10 @@ router.get("/google/callback", (req, res, next) => {
         secure: false, // change to true in production
         sameSite: "lax"
       });
-      
+
       // cookies are easier to use when we are redirecting 
 
-        // Redirect to frontend dashboard (or Hero page)
+      // Redirect to frontend dashboard (or Hero page)
       res.redirect("http://localhost:3000/Hero");
 
     })(req, res, next);

@@ -47,7 +47,7 @@ const Admin = () => {
           method: "GET", // session-based auth
           credentials: "include",
         });
-        
+
         const userData = await userRes.json();
         if (userRes.ok) setUserData(userData.user);
         else setError(userData.error || "User not found");
@@ -58,6 +58,7 @@ const Admin = () => {
           credentials: "include",
         });
         const quizData = await quizRes.json();
+        console.log("Quiz Results API:", quizData);
         if (quizRes.ok) setQuizResults(quizData || []);
       } catch (err) {
         console.error("Unknown error:", err);

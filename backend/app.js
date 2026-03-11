@@ -61,47 +61,48 @@ passport.use(userModel.createStrategy()); // Local strategy (handled by passport
 
 jwt_strategy(passport); // JWT strategy for protected routes
 
-passport.use(new GoogleStrategy( {
-    clientID: process.env.GOOGLE_CLIENT_ID,
-    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: process.env.GOOGLE_CALLBACK_URL,
-  },
+passport.use(new GoogleStrategy({
+  clientID: process.env.GOOGLE_CLIENT_ID,
+  clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+  callbackURL: process.env.GOOGLE_CALLBACK_URL,
+},
 
-  async function(accessToken, refreshToken, profile, done) { 
-    
-    try{    let user = await userModel.findOne({
-          $or: [
-            { googleId: profile.id },
-            { email: profile.emails[0].value }
-          ]
-        });
+  async function (accessToken, refreshToken, profile, done) {
+
+    try {
+      let user = await userModel.findOne({
+        $or: [
+          { googleId: profile.id },
+          { email: profile.emails[0].value }
+        ]
+      });
 
 
-    if(!user){
-      // we are signing up the user 
-      console.log(profile);
-      const newUser = new userModel({
-        googleId: profile.id,
-        email: profile.emails[0].value,
-        name: profile.displayName,
-      })
+      if (!user) {
+        // we are signing up the user 
+        console.log(profile);
+        const newUser = new userModel({
+          googleId: profile.id,
+          email: profile.emails[0].value,
+          name: profile.displayName,
+        })
 
-      await newUser.save();
-      return done(null,newUser);
+        await newUser.save();
+        return done(null, newUser);
+      }
+      else {
+        // we are logining in the user 
+        if (!user.googleId) {
+          user.googleId = profile.id;
+          await user.save();
+        }
+        return done(null, user);
+      }
     }
-    else{
-            // we are logining in the user 
-            if (!user.googleId) {
-                user.googleId = profile.id;
-                await user.save();
-            }
-            return done(null, user);
+    catch (err) {
+      console.log("error occured");
+      return done(err, null);
     }
-  }
-  catch(err){
-    console.log("error occured");
-    return done(err,null);
-  }
 
   }
 
@@ -116,19 +117,20 @@ app.use('/', indexRouter);
 
 app.use('/api/', listingsRouter);
 app.use('/api/auth', usersRouter); // user auth routes 
-
-app.use('/api/toggle-visit', usersRouter);
+app.use('/api', usersRouter); // for visit tracking routes like toggle-visit and check-visit
+// app.use('/api/toggle-visit', usersRouter);
+// app.use('/api/check-visit', usersRouter);
 
 // app.use(isLoggedIn); // Middleware to check if user is logged in for all routes below this line 
 
 app.use('/api/generate-sound', generateSoundRoute);
-app.use('/api/get_visits',usersRouter);
+// app.use('/api/get_visits',usersRouter);
 app.use('/api', commentsRoute);
 app.use('/api/generate_info', infoRouter);
 app.use('/api/submit_quiz', submitRouter);
 app.use("/api/upload", uploadRoutes);
 app.use('/api/leaderboard', QuizRouter);
-app.use('/api/geocode-cities',geminiRoute);
+app.use('/api/geocode-cities', geminiRoute);
 
 // for the commuinity page
 app.use("/api/community", communityRoutes);

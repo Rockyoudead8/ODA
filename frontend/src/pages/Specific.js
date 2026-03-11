@@ -17,13 +17,14 @@ function Specific() {
   const [listing, setListing] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [commentText, setCommentText] = useState(null);
+  // const [commentText, setCommentText] = useState(null);
+  const [commentText, setCommentText] = useState("");
   const [commentImage, setCommentImage] = useState(null);
   const [comments, setComments] = useState([]);
   const [visited, setVisited] = useState(false);
   const [visitCount, setVisitCount] = useState(0);
   const [message, setMessage] = useState("");
-
+  const [visiting, setVisiting] = useState(false);
   // displayMessage and toggleCityVisit functions remain the same
   const displayMessage = (text, isError = false) => {
     setMessage({ text, isError });
@@ -32,6 +33,9 @@ function Specific() {
 
   const toggleCityVisit = async () => {
 
+    if (visiting) return;
+    setVisiting(true);
+
     try {
       const res = await fetch("http://localhost:8000/api/toggle-visit", {
         method: "POST",
@@ -39,23 +43,45 @@ function Specific() {
         body: JSON.stringify({ listingId: id }),
         credentials: "include",
       });
+
       const data = await res.json();
+
       if (res.status === 401) {
         displayMessage("Please login first", true);
         setTimeout(() => navigate("/login"), 1500);
         return;
       }
+
       if (!res.ok) throw new Error(data.error || "Failed to update visit");
+
       setVisited(data.visited);
 
-      displayMessage(data.visited ? "City marked as visited!" : "Visit status removed.", false);
+
+      // fetch real city count again
+      const visitRes = await fetch(
+        `http://localhost:8000/api/get_visits?cityName=${encodeURIComponent(listing.title)}`,
+        { credentials: "include" }
+      );
+
+      if (visitRes.ok) {
+        const visitData = await visitRes.json();
+        setVisitCount(visitData.userCount || 0);
+      }
+
+      displayMessage(
+        data.visited ? "City marked as visited!" : "Visit status removed.",
+        false
+      );
+
     } catch (err) {
       console.error(err);
       displayMessage("Error updating visit status.", true);
+    } finally {
+      setVisiting(false);
     }
   };
 
-  // --- MODIFIED: Combined useEffect for all initial data fetching ---
+
   useEffect(() => {
     const fetchAllData = async () => {
       try {
@@ -74,6 +100,15 @@ function Specific() {
         const commentsData = await commentsRes.json();
 
         setListing(listingData);
+        const checkRes = await fetch(
+          `http://localhost:8000/api/check-visit?cityName=${encodeURIComponent(listingData.title)}`,
+          { credentials: "include" }
+        );
+
+        if (checkRes.ok) {
+          const checkData = await checkRes.json();
+          setVisited(checkData.visited);
+        }
         setComments(commentsData);
 
         // 2. Fetch Visit Count now that we have the listing title
