@@ -15,6 +15,7 @@ var communityRoutes = require('./routes/community');
 var geminiRoute = require('./routes/geminiRoute');
 var QuizRouter = require('./routes/QuizResult');
 const placesRoutes = require("./routes/places");
+const sendOTPRouter = require("./routes/sendOTP");
 
 
 const generateSoundRoute = require('./routes/generateSound');
@@ -118,6 +119,7 @@ app.use('/', indexRouter);
 app.use('/api/', listingsRouter);
 app.use('/api/auth', usersRouter); // user auth routes 
 app.use('/api', usersRouter); // for visit tracking routes like toggle-visit and check-visit
+app.use("/api/auth/send-otp", sendOTPRouter);
 // app.use('/api/toggle-visit', usersRouter);
 // app.use('/api/check-visit', usersRouter);
 

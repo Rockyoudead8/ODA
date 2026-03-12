@@ -10,6 +10,7 @@ const passport = require("passport");
 const localStrategy = require("passport-local");
 const isLoggedIn = require('../middlewares/mw');
 const jwt = require("jsonwebtoken");
+const otpModel = require("../models/otp");
 
 exports.handleGetUser = async (req, res) => {
   try {
@@ -75,11 +76,22 @@ exports.handleLogin = (req, res) => {
 
 exports.handleSignup =  async (req, res) => {
 
-  const { name, email, password } = req.body;
+  const { name, email, password ,otp} = req.body;
 
   console.log("Signup Route Hit");
 
   try {
+
+    // code for verifying OTP
+    const otpRecord = await otpModel.findOne({ otp : otp, email: email });
+
+    if (!otpRecord) {
+      return res.status(400).json({ message: "Invalid OTP" });
+    }
+
+    if(otpRecord.expiresAt < new Date()){
+      return res.status(400).json({ message: "OTP expired" });
+    }
 
     const newUser = new user({ name, email});
     const registeredUser = await user.register(newUser, password);

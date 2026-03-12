@@ -129,7 +129,7 @@ router.get("/get_user", passport.authenticate("jwt", { session: false }), c.hand
 router.post('/login', c.handleLogin);
 
 // signup route
-router.post('/signup', c.handleSignup);
+router.post('/verify-otp', c.handleSignup);
 
 // logout route 
 // see why just using req.logout is not working?? - IMPORTANT // it is method by passport 
