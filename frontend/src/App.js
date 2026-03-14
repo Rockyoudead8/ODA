@@ -12,6 +12,7 @@ import SignupPage from './pages/SignupPage'
 import 'leaflet/dist/leaflet.css';
 import Explore from './pages/Explore'
 import ProtectedRoute from './components/ProtectedRoute'
+import ChatPage from './pages/ChatPage'
 function App() {
   return (
     <>
@@ -32,6 +33,9 @@ function App() {
           <Route path='/Hero' element={<Hero />} />
           <Route path='/Community' element={<ProtectedRoute>
             <Community />
+          </ProtectedRoute>} />
+          <Route path='/Chat' element={<ProtectedRoute>
+            <ChatPage />
           </ProtectedRoute>} />
           <Route path='/Specific/:id' element={<ProtectedRoute>
             <Specific />
