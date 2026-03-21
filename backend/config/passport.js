@@ -20,24 +20,45 @@ const options = {
     secretOrKey: process.env.JWT_SECRET,
 }
 
+// const strategy = new JwtStrategy(options, async (payload, done) => {
+
+//     const user = await userModel.findById(payload.id);
+//     try{
+
+//         if(user){
+//             return done(null, user);
+//         }  
+//         else{
+//             return done(null, false);
+//         }
+
+//     }
+//     catch(error){
+//         return done(error, false);
+//     }
+
+// }); 
+
 const strategy = new JwtStrategy(options, async (payload, done) => {
+    try {
+        // 1. Log the payload to see if the token is even being decoded
+        console.log("JWT Payload received:", payload);
 
-    const user = await userModel.findById(payload.id);
-    try{
+        // 2. Try to find the user (Search for both .id and ._id just in case)
+        const userId = payload.id || payload._id;
+        const user = await userModel.findById(userId);
 
-        if(user){
+        if (user) {
             return done(null, user);
-        }  
-        else{
+        } else {
+            console.log("Passport: User not found in DB");
             return done(null, false);
         }
-
-    }
-    catch(error){
+    } catch (error) {
+        console.error("Passport Strategy Error:", error); // This will finally show in your terminal
         return done(error, false);
     }
-
-}); 
+});
 
 module.exports = (passport) => {
     passport.use(strategy); 
