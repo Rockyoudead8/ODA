@@ -25,8 +25,8 @@ function Header() {
 
   const navItems = [
     { to: "/Community", label: "Community", Icon: Search },
-    user && { to: "/Admin", label: "Profile", Icon: User },
     user && { to: "/Chat", label: "Chat", Icon: Search },
+    user && { to: "/Admin", label: "Profile", Icon: User },
     !user && { to: "/", label: "Login", Icon: LogIn },
     !user && { to: "/signup", label: "Sign Up", Icon: UserPlus, isButton: true },
     user && { label: "Logout", Icon: LogOut, onClick: handleLogout },

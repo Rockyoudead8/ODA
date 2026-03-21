@@ -282,11 +282,15 @@ const Admin = () => {
             className="lg:col-span-2 xl:col-span-3 space-y-8"
             initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.4 }}
           >
+            
+            <UserVisitedMap visitedCities={visitedCitiesWithCoords} />
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <StatCard icon={<BookOpen className="w-6 h-6 text-indigo-500" />} title="Total Quizzes Taken" value={totalQuizzes} color="border-indigo-500" />
               <StatCard icon={<Target className="w-6 h-6 text-pink-500" />} title="Overall Average Score" value={`${overallAvgScore}%`} color="border-pink-500" detail={`out of ${totalQuizzes} quizzes`} />
               <StatCard icon={<Award className="w-6 h-6 text-teal-500" />} title="Best Performing City" value={bestCity} color="border-teal-500" />
             </div>
+
             <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-xl">
               <h2 className="text-2xl font-bold mb-6 text-gray-800">Performance Analysis</h2>
               <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
@@ -302,8 +306,6 @@ const Admin = () => {
                 </div>
               </div>
             </div>
-
-            <UserVisitedMap visitedCities={visitedCitiesWithCoords} />
 
           </motion.div>
         </div>

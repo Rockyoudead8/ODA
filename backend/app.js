@@ -16,6 +16,7 @@ var geminiRoute = require('./routes/geminiRoute');
 var QuizRouter = require('./routes/QuizResult');
 const placesRoutes = require("./routes/places");
 const sendOTPRouter = require("./routes/sendOTP");
+const MessageRouter = require("./routes/message.route.js");
 
 
 const generateSoundRoute = require('./routes/generateSound');
@@ -25,9 +26,12 @@ var localStrategy = require("passport-local");
 const userModel = require("./models/users");
 const cors = require('cors');
 var isLoggedIn = require('./middlewares/mw');
-var app = express();
 const GoogleStrategy = require("passport-google-oauth20").Strategy;
 const jwt_strategy = require("./config/passport");
+const {app, server} = require("./config/socket");
+
+// const app = require("./config/socket").app;
+console.log("APP FILE STARTED");
 
 // cors // 
 app.use(cors({
@@ -37,12 +41,14 @@ app.use(cors({
 
 const mongoose = require('mongoose');
 
-mongoose.connect(process.env.MONGODB_URL, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-})
-  .then(() => console.log('✅ MongoDB connected'))
-  .catch(err => console.error('❌ MongoDB error:', err.message));
+const connectDB = () => {
+  mongoose.connect(process.env.MONGODB_URL, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true
+  })
+    .then(() => console.log('✅ MongoDB connected'))
+    .catch(err => console.error('❌ MongoDB error:', err.message));
+};
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -140,6 +146,7 @@ app.use("/api/community", communityRoutes);
 // for fetching places from geoapify and caching them in MongoDB
 app.use("/api/places", placesRoutes);
 
+app.use("/api/messages",MessageRouter);
 
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
@@ -155,6 +162,11 @@ app.use(function (err, req, res, next) {
   // render the error page
   res.status(err.status || 500);
   res.render('error');
+});
+
+server.listen(8000, () => {
+  console.log("Server started on port 8000");
+  connectDB();
 });
 
 module.exports = app;
