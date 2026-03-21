@@ -165,23 +165,37 @@ exports.getChatPartners = async (req, res) => {
         { senderId: loggedInUserId },
         { receiverId: loggedInUserId },
       ],
-    });
+    }).sort({ createdAt: -1 }); // 🔥 newest first
 
-    const chatPartnerIds = [
-      ...new Set(
-        messages.map((msg) =>
-          msg.senderId.toString() === loggedInUserId.toString()
-            ? msg.receiverId.toString()
-            : msg.senderId.toString()
-        )
-      ),
-    ];
+    const partnerMap = new Map();
+
+    // ✅ get latest message per partner
+    for (let msg of messages) {
+      const partnerId =
+        msg.senderId.toString() === loggedInUserId.toString()
+          ? msg.receiverId.toString()
+          : msg.senderId.toString();
+
+      // only set first time (since messages are sorted DESC)
+      if (!partnerMap.has(partnerId)) {
+        partnerMap.set(partnerId, msg.createdAt);
+      }
+    }
+
+    const sortedPartnerIds = Array.from(partnerMap.entries())
+      .sort((a, b) => new Date(b[1]) - new Date(a[1])) // 🔥 sort by latest msg
+      .map(([id]) => id);
 
     const chatPartners = await User.find({
-      _id: { $in: chatPartnerIds },
+      _id: { $in: sortedPartnerIds },
     }).select("-hash -salt");
 
-    res.status(200).json(chatPartners);
+    // 🔥 maintain order (VERY IMPORTANT)
+    const sortedUsers = sortedPartnerIds.map((id) =>
+      chatPartners.find((u) => u._id.toString() === id)
+    );
+
+    res.status(200).json(sortedUsers);
   } catch (err) {
     res.status(500).json({ error: "Internal server error" });
   }

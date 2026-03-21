@@ -85,6 +85,7 @@ const express = require("express");
 const http = require("http");
 const cookie = require("cookie");
 const jwt = require("jsonwebtoken");
+const User = require("../models/users");
 
 const app = express();
 const server = http.createServer(app);
@@ -137,12 +138,22 @@ io.on("connection", (socket) => {
     }
   });
 
-  socket.on("disconnect", () => {
+  socket.on("typing", ({ to, from }) => {
+    io.to(to).emit("typing", { from });
+  });
+
+  socket.on("disconnect",async () => {
     console.log("User disconnected:", userId);
 
     delete userSocketMap[userId];
     io.emit("getOnlineUsers", Object.keys(userSocketMap));
+
+    await User.findByIdAndUpdate(socket.userId, {
+      lastSeen: new Date(),
+    });
   });
+
+  
 });
 
 module.exports = {
