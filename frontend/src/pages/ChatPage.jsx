@@ -163,7 +163,7 @@ export default function ChatPage({ user }) {
   }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-100">
+    <div className="flex h-screen overflow-hidden bg-gray-100 ">
       {/* LEFT PANEL */}
       <div className="w-72 bg-white border-r flex flex-col shadow-sm h-full">
         <div className="relative p-3">

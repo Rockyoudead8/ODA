@@ -49,7 +49,7 @@ function Header() {
         
 
         {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center gap-4 lg:gap-8 text-gray-700 font-semibold">
+        <nav className="hidden md:flex items-center gap-4 lg:gap-8 text-gray-700 font-semibold ">
           {navItems.map((item, index) =>
             item.onClick ? (
               <button
