@@ -1,32 +1,39 @@
-import { useState } from "react";
+import { useState , useRef } from "react";
 
-function CreatePost() {
+
+function CreatePost({refreshFeed}) {
 
   const [city, setCity] = useState("");
   const [content, setContent] = useState("");
   const [imageFile, setImageFile] = useState(null);
+  const fileInputRef = useRef(null);
 
   const submitPost = async () => {
+  const formData = new FormData();
 
-    const formData = new FormData();
+  formData.append("city", city);
+  formData.append("content", content);
 
-    formData.append("city", city);
-    formData.append("content", content);
+  if (imageFile) {
+    formData.append("image", imageFile);
+  }
 
-    if (imageFile) {
-      formData.append("image", imageFile);
-    }
+  await fetch("http://localhost:8000/api/community/create", {
+    credentials: "include",
+    method: "POST",
+    body: formData
+  });
 
-    await fetch("http://localhost:8000/api/community/create", {
-      credentials: "include",
-      method: "POST",
-      body: formData
-    });
+  setCity("");
+  setContent("");
+  setImageFile(null);
 
-    setCity("");
-    setContent("");
-    setImageFile(null);
-  };
+  if (fileInputRef.current) {
+    fileInputRef.current.value = "";
+  }
+
+  refreshFeed();
+};
 
   return (
     <div className="border p-4 rounded mb-6">
@@ -48,6 +55,7 @@ function CreatePost() {
       <input
         type="file"
         accept="image/*"
+        ref={fileInputRef}
         onChange={(e) => setImageFile(e.target.files[0])}
         className="border p-2 w-full mb-3"
       />

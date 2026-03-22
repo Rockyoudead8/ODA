@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
-import { BrowserRouter, Route, Routes } from "react-router-dom"
+import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom"
+
 import Check from './pages/Check'
 import Hero from './pages/Hero'
 import Specific from './pages/Specific'
@@ -14,8 +15,48 @@ import Explore from './pages/Explore'
 import ProtectedRoute from './components/ProtectedRoute'
 import ChatPage from './pages/ChatPage'
 
-function App() {
+function AppContent({ user }) {
+  const location = useLocation();
 
+  return (
+    <>
+      <Header />
+
+      <Routes>
+        <Route path='/' element={<LoginPage />} />
+        <Route path='/Signup' element={<SignupPage />} />
+
+        <Route path='/Check' element={<ProtectedRoute><Check /></ProtectedRoute>} />
+        <Route path='/Admin' element={<ProtectedRoute><Admin /></ProtectedRoute>} />
+
+        <Route path='/Hero' element={<Hero />} />
+
+        <Route path='/Community' element={
+          <ProtectedRoute>
+            <Community />
+          </ProtectedRoute>
+        } />
+
+        <Route path='/Chat' element={
+          <ProtectedRoute>
+            <ChatPage user={user} />
+          </ProtectedRoute>
+        } />
+
+        <Route path='/Specific/:id' element={
+          <ProtectedRoute>
+            <Specific />
+          </ProtectedRoute>
+        } />
+      </Routes>
+
+      {/* 🔥 HIDE FOOTER ON CHAT PAGE */}
+      {location.pathname !== "/Chat" && <Footer />}
+    </>
+  );
+}
+
+function App() {
   const [user, setUser] = useState(null);
 
   useEffect(() => {
@@ -24,67 +65,24 @@ function App() {
     })
       .then(res => res.json())
       .then(data => {
-        console.log("APP USER:", data);
-
         let actualUser = data.user || data;
 
         if (actualUser?.id && !actualUser._id) {
           actualUser._id = actualUser.id;
         }
 
-        if (!actualUser?._id) {
-          console.error("User missing _id:", data);
-          return;
-        }
+        if (!actualUser?._id) return;
 
         setUser(actualUser);
       })
-      .catch(err => {
-        console.error("User fetch error:", err);
-        setUser(null);
-      });
+      .catch(() => setUser(null));
   }, []);
 
   return (
     <BrowserRouter>
-
-      <Header />
-
-      <Routes>
-        {/* public */}
-        <Route path='/' element={<LoginPage />} />
-        <Route path='/Signup' element={<SignupPage />} />
-
-        {/* protected */}
-        <Route path='/Check' element={<ProtectedRoute>
-          <Check />
-        </ProtectedRoute>} />
-
-        <Route path='/Admin' element={<ProtectedRoute>
-          <Admin />
-        </ProtectedRoute>} />
-
-        <Route path='/Hero' element={<Hero />} />
-
-        <Route path='/Community' element={<ProtectedRoute>
-          <Community />
-        </ProtectedRoute>} />
-
-        <Route path='/Chat' element={
-          <ProtectedRoute>
-            <ChatPage user={user} />
-          </ProtectedRoute>
-        } />
-
-        <Route path='/Specific/:id' element={<ProtectedRoute>
-          <Specific />
-        </ProtectedRoute>} />
-
-      </Routes>
-
-      <Footer />
+      <AppContent user={user} />
     </BrowserRouter>
-  )
+  );
 }
 
 export default App;

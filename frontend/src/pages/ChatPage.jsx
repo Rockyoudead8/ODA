@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { socket } from "../utils/socket";
 
 const API = "http://localhost:8000/api/messages";
@@ -15,15 +15,14 @@ export default function ChatPage({ user }) {
   const [searchResults, setSearchResults] = useState([]);
   const [showDropdown, setShowDropdown] = useState(false);
 
+  const messagesContainerRef = useRef(null);
   const [isTyping, setIsTyping] = useState(false);
 
-  // ✅ CONNECT SOCKET ONCE
   useEffect(() => {
     socket.connect();
     return () => socket.disconnect();
   }, []);
 
-  // ✅ SOCKET LISTENERS
   useEffect(() => {
     const handleOnline = (users) => setOnlineUsers(users);
 
@@ -33,7 +32,6 @@ export default function ChatPage({ user }) {
           ? msg.receiverId
           : msg.senderId;
 
-      // update messages if chat open
       if (
         (msg.senderId?.toString() === selectedUser?._id?.toString() &&
           msg.receiverId?.toString() === user._id?.toString()) ||
@@ -43,7 +41,6 @@ export default function ChatPage({ user }) {
         setMessages((prev) => [...prev, msg]);
       }
 
-      // 🔥 reorder chats
       setPartners((prev) => {
         const updated = [...prev];
         const index = updated.findIndex(
@@ -77,7 +74,6 @@ export default function ChatPage({ user }) {
     };
   }, [selectedUser, user]);
 
-  // ✅ FETCH DATA
   useEffect(() => {
     fetch(`${API}/chats`, { credentials: "include" })
       .then((res) => res.json())
@@ -90,7 +86,6 @@ export default function ChatPage({ user }) {
       .catch(() => setAllUsers([]));
   }, []);
 
-  // ✅ SEARCH
   useEffect(() => {
     if (!searchQuery.trim()) {
       setSearchResults([]);
@@ -107,6 +102,18 @@ export default function ChatPage({ user }) {
     setSearchResults(filtered);
     setShowDropdown(true);
   }, [searchQuery, allUsers, user]);
+
+  // ✅ auto scroll (simple delay fix)
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (messagesContainerRef.current) {
+        messagesContainerRef.current.scrollTop =
+          messagesContainerRef.current.scrollHeight;
+      }
+    }, 150);
+
+    return () => clearTimeout(timeout);
+  }, [messages]);
 
   const loadMessages = (u) => {
     if (!u?._id) return;
@@ -134,7 +141,6 @@ export default function ChatPage({ user }) {
     socket.emit("send_message", msg);
     setMessages((prev) => [...prev, msg]);
 
-    // 🔥 reorder on send
     setPartners((prev) => {
       const updated = [...prev];
       const index = updated.findIndex(
@@ -157,9 +163,9 @@ export default function ChatPage({ user }) {
   }
 
   return (
-    <div className="flex h-screen bg-gray-100">
+    <div className="flex h-screen overflow-hidden bg-gray-100">
       {/* LEFT PANEL */}
-      <div className="w-72 bg-white border-r flex flex-col">
+      <div className="w-72 bg-white border-r flex flex-col shadow-sm h-full">
         <div className="relative p-3">
           <input
             placeholder="Search users..."
@@ -199,11 +205,17 @@ export default function ChatPage({ user }) {
               <div
                 key={p?._id}
                 onClick={() => loadMessages(p)}
-                className={`p-3 cursor-pointer flex justify-between items-center ${
+                className={`p-3 cursor-pointer flex items-center justify-between hover:bg-gray-100 transition ${
                   selectedUser?._id === p?._id ? "bg-blue-50" : ""
                 }`}
               >
-                <span>{p?.name}</span>
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center text-sm">
+                    {p?.name?.charAt(0).toUpperCase()}
+                  </div>
+                  <span>{p?.name}</span>
+                </div>
+
                 <span
                   className={`w-2 h-2 rounded-full ${
                     isOnline ? "bg-green-500" : "bg-gray-400"
@@ -216,29 +228,40 @@ export default function ChatPage({ user }) {
       </div>
 
       {/* RIGHT PANEL */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col h-full overflow-hidden">
         {selectedUser ? (
           <>
-            <div className="p-4 border-b bg-white flex flex-col">
-              <span className="font-semibold">{selectedUser?.name}</span>
-              <span
-                className={`text-xs ${
-                  isTyping
-                    ? "text-blue-500"
+            {/* HEADER */}
+            <div className="p-4 border-b bg-white flex items-center gap-3 shadow-sm shrink-0 overflow-hidden">
+              <div className="w-10 h-10 rounded-full bg-blue-500 text-white flex items-center justify-center">
+                {selectedUser?.name?.charAt(0).toUpperCase()}
+              </div>
+
+              <div className="flex flex-col">
+                <span className="font-semibold">{selectedUser?.name}</span>
+                <span
+                  className={`text-xs ${
+                    isTyping
+                      ? "text-blue-500"
+                      : onlineUsers.includes(selectedUser?._id?.toString())
+                      ? "text-green-500"
+                      : "text-gray-400"
+                  }`}
+                >
+                  {isTyping
+                    ? "Typing..."
                     : onlineUsers.includes(selectedUser?._id?.toString())
-                    ? "text-green-500"
-                    : "text-gray-400"
-                }`}
-              >
-                {isTyping
-                  ? "Typing..."
-                  : onlineUsers.includes(selectedUser?._id?.toString())
-                  ? "Online"
-                  : "Offline"}
-              </span>
+                    ? "Online"
+                    : "Offline"}
+                </span>
+              </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-5 flex flex-col gap-2">
+            {/* MESSAGES */}
+            <div
+              ref={messagesContainerRef}
+              className="flex-1 overflow-y-auto p-5 flex flex-col gap-3 min-h-0"
+            >
               {messages.map((m, i) => {
                 const senderId =
                   typeof m.senderId === "object"
@@ -251,15 +274,15 @@ export default function ChatPage({ user }) {
                 return (
                   <div
                     key={i}
-                    className={`max-w-[60%] ${
+                    className={`max-w-[65%] ${
                       isMe ? "self-end" : "self-start"
                     }`}
                   >
                     <div
-                      className={`p-2 px-3 rounded-2xl ${
+                      className={`p-3 rounded-2xl shadow-sm ${
                         isMe
-                          ? "bg-blue-500 text-white"
-                          : "bg-gray-200 text-black"
+                          ? "bg-blue-500 text-white rounded-br-none"
+                          : "bg-white border rounded-bl-none"
                       }`}
                     >
                       {m?.text}
@@ -269,7 +292,8 @@ export default function ChatPage({ user }) {
               })}
             </div>
 
-            <div className="flex p-3 gap-2 border-t bg-white">
+            {/* INPUT */}
+            <div className="p-3 bg-white border-t flex gap-2">
               <input
                 value={text}
                 onChange={(e) => {
@@ -280,18 +304,19 @@ export default function ChatPage({ user }) {
                   });
                 }}
                 placeholder="Type a message..."
-                className="flex-1 p-2 rounded-full border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition"
+                className="flex-1 p-3 rounded-full border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none"
               />
+
               <button
                 onClick={sendMessage}
-                className="px-4 py-2 rounded-full bg-blue-500 text-white"
+                className="px-5 py-2 rounded-full bg-blue-500 text-white hover:bg-blue-600 transition"
               >
                 Send
               </button>
             </div>
           </>
         ) : (
-          <div className="m-auto text-gray-400">
+          <div className="m-auto text-gray-400 text-lg">
             Select a chat to start messaging
           </div>
         )}

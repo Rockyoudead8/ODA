@@ -63,9 +63,9 @@ router.post(
 router.get("/feed", async (req, res) => {
     console.log("GET FEED HIT");
     const posts = await Post.find()
-        .populate("user")
-        .populate("comments.user")
-        .populate("comments.replies.user")
+        .populate("user", "name")
+        .populate("comments.user", "name")
+        .populate("comments.replies.user", "name")
         .sort({ createdAt: -1 });
 
     res.json(posts);
