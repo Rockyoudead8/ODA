@@ -51,7 +51,7 @@ function AppContent({ user }) {
       </Routes>
 
       {/* 🔥 HIDE FOOTER ON CHAT PAGE */}
-      {location.pathname !== "/Chat" && <Footer />}
+      {location.pathname !== "/Chat"  && location.pathname !== "/Community" && <Footer />}
     </>
   );
 }

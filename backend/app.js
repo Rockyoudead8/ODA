@@ -17,6 +17,7 @@ var QuizRouter = require('./routes/QuizResult');
 const placesRoutes = require("./routes/places");
 const sendOTPRouter = require("./routes/sendOTP");
 const MessageRouter = require("./routes/message.route.js");
+const GroupRouter = require("./routes/group_route.js");
 
 
 const generateSoundRoute = require('./routes/generateSound');
@@ -147,6 +148,7 @@ app.use("/api/community", communityRoutes);
 app.use("/api/places", placesRoutes);
 
 app.use("/api/messages",MessageRouter);
+app.use("/api/groups", GroupRouter);
 
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {

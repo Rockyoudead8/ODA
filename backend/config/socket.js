@@ -1,91 +1,10 @@
-// const Server = require("socket.io").Server;
-// const passport = require("passport");
-// const express = require("express");
-// const http = require("http");
-
-
-
-// const app = express();
-// const server = http.createServer(app);
-
-// const io = new Server(server, {
-//   cors: {
-//     // origin: [ENV.CLIENT_URL],
-//     origin: 'http://localhost:3000', // React's port
-//     credentials: true
-//   },
-// });
-
-// // we will use this function to check if the user is online or not
-// const getReceiverSocketId = function (userId) {
-//   return userSocketMap[userId];
-// }
-
-// // this is for storig online users
-// const userSocketMap = {}; // {userId:socketId}
-
-// function onlyForHandshake(middleware) {
-//   return (req, res, next) => {
-//     if (!req._query.sid) {
-//       middleware(req, res, next);
-//     } else {
-//       next();
-//     }
-//   };
-// }
-
-// io.engine.use(
-//   onlyForHandshake((req, res, next) => {
-//     passport.authenticate("jwt", { session: false }, (err, user) => {
-//       if (err || !user) {
-//         res.writeHead(401);
-//         return res.end();
-//       }
-
-//       req.user = user;
-//       next();
-//     })(req, res, next);
-//   })
-// );
-
-// io.on("connection", (socket) => {
-//   const user = socket.request.user;
-//   const userId = user._id.toString();
-
-//   console.log("A user connected", user.fullName);
-
-//   userSocketMap[userId] = socket.id;
-
-//   io.emit("getOnlineUsers", Object.keys(userSocketMap));
-
-//   socket.on("send_message", (message) => {
-//     const receiverSocketId = userSocketMap[message.receiverId.toString()];
-
-//     if (receiverSocketId) {
-//       io.to(receiverSocketId).emit("receive_message", message);
-//     }
-//   });
-
-//   socket.on("disconnect", () => {
-//     console.log("A user disconnected", user.fullName);
-
-//     delete userSocketMap[userId];
-//     io.emit("getOnlineUsers", Object.keys(userSocketMap));
-//   });
-// });
-
-// module.exports = {
-//   app,
-//   server,
-//   getReceiverSocketId,
-// };
-
 const { Server } = require("socket.io");
 const express = require("express");
 const http = require("http");
 const cookie = require("cookie");
 const jwt = require("jsonwebtoken");
 const User = require("../models/users");
+const Group = require("../models/Group"); // ← NEW
 
 const app = express();
 const server = http.createServer(app);
@@ -101,63 +20,74 @@ const userSocketMap = {};
 
 const getReceiverSocketId = (userId) => userSocketMap[userId];
 
-// ✅ SOCKET AUTH (READ COOKIE JWT)
+// ── SOCKET AUTH (read cookie JWT) ─────────────────────────────────────────────
 io.use((socket, next) => {
   const cookies = socket.handshake.headers.cookie;
-
   if (!cookies) return next(new Error("No cookies"));
 
   const parsed = cookie.parse(cookies);
   const token = parsed.jwt;
-
   if (!token) return next(new Error("No token"));
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    socket.user = decoded; // contains { id: ... }
+    socket.user = decoded; // { id: ... }
     next();
   } catch (err) {
     return next(new Error("Unauthorized"));
   }
 });
 
-io.on("connection", (socket) => {
-  const userId = socket.user.id.toString(); // ⚠️ payload.id
+io.on("connection", async (socket) => {
+  const userId = socket.user.id.toString();
 
   console.log("User connected:", userId);
 
   userSocketMap[userId] = socket.id;
 
+  // ── Join all existing group rooms for this user ───────────────────────
+  try {
+    const groups = await Group.find({ members: userId }).select("_id");
+    groups.forEach((g) => socket.join(g._id.toString()));
+  } catch (err) {
+    console.error("Error joining group rooms:", err.message);
+  }
+
   io.emit("getOnlineUsers", Object.keys(userSocketMap));
 
+  // ── Direct message (client-side relay, already saved via REST) ────────
   socket.on("send_message", (message) => {
-    const receiverSocketId = userSocketMap[message.receiverId.toString()];
-
+    const receiverSocketId = userSocketMap[message.receiverId?.toString()];
     if (receiverSocketId) {
       io.to(receiverSocketId).emit("receive_message", message);
     }
   });
 
+  // ── Typing indicator (direct chats only) ─────────────────────────────
   socket.on("typing", ({ to, from }) => {
-    io.to(to).emit("typing", { from });
+    const receiverSocketId = userSocketMap[to?.toString()];
+    if (receiverSocketId) {
+      io.to(receiverSocketId).emit("typing", { from });
+    }
   });
 
-  socket.on("disconnect",async () => {
+  // ── Disconnect ────────────────────────────────────────────────────────
+  socket.on("disconnect", async () => {
     console.log("User disconnected:", userId);
 
     delete userSocketMap[userId];
     io.emit("getOnlineUsers", Object.keys(userSocketMap));
 
-    await User.findByIdAndUpdate(socket.userId, {
-      lastSeen: new Date(),
-    });
+    try {
+      await User.findByIdAndUpdate(userId, { lastSeen: new Date() });
+    } catch (_) {}
   });
-
-  
 });
 
 module.exports = {
   app,
   server,
+  io,            // ← exported so controllers can emit from REST handlers
+  userSocketMap, // ← exported so group controller can add sockets to rooms
   getReceiverSocketId,
 };
