@@ -34,41 +34,57 @@ exports.handleGenerateinfo = async (req, res) => {
 
     // --- MODIFIED PROMPT ---
     const prompt = `
-      You are a historian and quiz creator. Generate detailed JSON for "${city}".
-      Return ONLY valid JSON.
+      You are a historian and expert quiz creator.
 
-      {
-        "history": "A short but detailed historical background of the city.",
-        "facts": ["fact1", "fact2", "fact3", "fact4"],
-        "famousStory": "A famous legend or cultural story associated with the city.",
-        "timeline": [
-          {"date": "YYYY", "event": "An important historical event."},
-          {"date": "YYYY", "event": "Another significant milestone."}
-        ],
-        "quizQuestions": [
-          {
-            "question": "Q1?",
-            "options": ["Option A", "Option B", "Option C", "Option D"],
-            "correctAnswerIndex": 1, 
-            "explanation": "Short explanation for why the answer (Option B) is correct."
-          },
-          {
-            "question": "Q2?",
-            "options": ["Option A", "Option B", "Option C", "Option D"],
-            "correctAnswerIndex": 3,
-            "explanation": "Explanation for why the answer (Option D) is correct."
-          },
-          {
-            "question": "Q3?",
-            "options": ["Option A", "Option B", "Option C", "Option D"],
-            "correctAnswerIndex": 0,
-            "explanation": "Explanation for why the answer (Option A) is correct."
-          }
-        ]
-      }
+Generate a structured JSON response for the city: "${city}".
 
-      Ensure 'correctAnswerIndex' is the zero-based index of the correct option in the 'options' array.
-    `;
+Requirements:
+
+1. Provide a short description of what the city is famous for. This may include history, culture, landmarks, food, or any defining characteristics. Keep it concise but informative (3–5 sentences).
+
+2. List exactly 4 "must-do" things for someone visiting the city. Each item should be specific and meaningful (not generic), reflecting the city's unique identity.
+
+3. Create 3 challenging quiz questions that test deep knowledge of the city's history, culture, or local facts. These should not be easily answerable by casual tourists.
+
+Format:
+
+Return ONLY valid JSON with the following structure:
+
+{
+  "city": "<city name>",
+  "description": "short description",
+  "mustDo": [
+    "<activity 1>",
+    "<activity 2>",
+    "<activity 3>",
+    "<activity 4>"
+  ],
+  "quiz": [
+    {
+      "question": "<question 1>",
+      "options": ["<option A>", "<option B>", "<option C>", "<option D>"],
+      "correctAnswerIndex": <0-based index>,
+      "explanation": "<brief explanation>"
+    },
+    {
+      "question": "<question 2>",
+      "options": ["<option A>", "<option B>", "<option C>", "<option D>"],
+      "correctAnswerIndex": <0-based index>,
+      "explanation": "<brief explanation>"
+    },
+    {
+      "question": "<question 3>",
+      "options": ["<option A>", "<option B>", "<option C>", "<option D>"],
+      "correctAnswerIndex": <0-based index>,
+      "explanation": "<brief explanation>"
+    }
+  ]
+}
+
+Important:
+- Ensure "correctAnswerIndex" is the zero-based index of the correct option in the "options" array.
+- Do not include any text outside the JSON.
+- Ensure the JSON is properly formatted and valid.`
 
     const result = await model.generateContent(prompt);
     const responseText = result.response.text();
@@ -94,6 +110,7 @@ exports.handleGenerateinfo = async (req, res) => {
     );
 
     console.log(`Cached/Updated data for ${cityKey}`);
+    console.log("Generated data:", parsedData);
     res.status(200).json(parsedData);
 
   } catch (err) {

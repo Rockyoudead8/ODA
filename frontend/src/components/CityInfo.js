@@ -1,12 +1,28 @@
 import React, { useEffect, useState } from "react";
+import {
+  Sparkles, BookOpen, Zap, HelpCircle,
+  CheckCircle2, XCircle, ChevronDown, ChevronUp, Loader2,
+} from "lucide-react";
+
+/* ── Small reusable section label ── */
+const SectionLabel = ({ icon: Icon, label, colorClass }) => (
+  <div className="flex items-center gap-2.5 mb-3.5">
+    <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${colorClass.bg}`}>
+      <Icon size={14} className={colorClass.icon} />
+    </div>
+    <span className={`text-[12px] font-bold uppercase tracking-widest ${colorClass.icon}`}>
+      {label}
+    </span>
+  </div>
+);
 
 function CityInfo({ city }) {
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [fetchError, setFetchError] = useState(null);
-  const [userAnswers, setUserAnswers] = useState({});
-  const [result, setResult] = useState(null);
-  const [submitting, setSubmitting] = useState(false);
+  const [data, setData]                         = useState(null);
+  const [loading, setLoading]                   = useState(false);
+  const [fetchError, setFetchError]             = useState(null);
+  const [userAnswers, setUserAnswers]           = useState({});
+  const [result, setResult]                     = useState(null);
+  const [submitting, setSubmitting]             = useState(false);
   const [showExplanations, setShowExplanations] = useState({});
 
   const generateNewInfo = async () => {
@@ -14,7 +30,6 @@ function CityInfo({ city }) {
     setFetchError(null);
     setResult(null);
     setUserAnswers({});
-
     try {
       const res = await fetch("http://localhost:8000/api/generate_info", {
         method: "POST",
@@ -22,15 +37,18 @@ function CityInfo({ city }) {
         body: JSON.stringify({ city, force_new: true }),
         credentials: "include",
       });
-
       const result = await res.json();
       if (!res.ok) throw new Error(result.error || "Server failed.");
 
-      setData(result);
+      // ✅ SAFE NORMALIZATION (no UI change)
+      const safeData = {
+        ...result,
+        quiz: result.quiz || [],
+        mustDo: result.mustDo || []
+      };
 
-      const cacheKey = `cityInfo_${city}`;
-      localStorage.setItem(cacheKey, JSON.stringify(result));
-
+      setData(safeData);
+      localStorage.setItem(`cityInfo_${city}`, JSON.stringify(safeData));
     } catch (err) {
       setFetchError(err.message);
     } finally {
@@ -40,30 +58,24 @@ function CityInfo({ city }) {
 
   useEffect(() => {
     if (!city) return;
-
-    const cacheKey = `cityInfo_${city}`;
-    const cached = localStorage.getItem(cacheKey);
-
-    if (cached) {
-      setData(JSON.parse(cached));
-    }
+    const cached = localStorage.getItem(`cityInfo_${city}`);
+    if (cached) setData(JSON.parse(cached));
   }, [city]);
 
-
-  const handleAnswerSelect = (qIndex, optionIndex) => {
+  const handleAnswerSelect = (qIndex, optionIndex) =>
     setUserAnswers(prev => ({ ...prev, [qIndex]: optionIndex }));
-  };
 
-  const toggleExplanation = (index) => {
+  const toggleExplanation = (index) =>
     setShowExplanations(prev => ({ ...prev, [index]: !prev[index] }));
-  };
 
   const handleSubmitQuiz = async () => {
-    if (!data?.quizQuestions || submitting) return;
-    const totalQuestions = data.quizQuestions.length;
+    if (!data || submitting) return;
+    const total = data.quiz.length;
 
-    if (Object.keys(userAnswers).length < totalQuestions) {
-      setFetchError(`Please answer all ${totalQuestions} questions.`);
+    const allAnsweredCheck = data.quiz.every((_, i) => userAnswers[i] !== undefined);
+
+  if (!allAnsweredCheck) {
+      setFetchError(`Please answer all ${total} questions.`);
       setTimeout(() => setFetchError(null), 3000);
       return;
     }
@@ -72,20 +84,21 @@ function CityInfo({ city }) {
     setResult(null);
     setFetchError(null);
 
-    const userAnswersArray = data.quizQuestions.map((_, i) => userAnswers[i]);
-    const correctAnswers = data.quizQuestions.map(q => q.correctAnswerIndex);
-
     try {
+
+      const payload = {
+    city,
+    userAnswers: data.quiz.map((_, i) =>
+      userAnswers[i] !== undefined ? Number(userAnswers[i]) : null
+    ),
+    correctAnswers: data.quiz.map(q => Number(q.correctAnswerIndex)),
+  };
 
       const res = await fetch("http://localhost:8000/api/submit_quiz", {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          city,
-          userAnswers: userAnswersArray,
-          correctAnswers
-        })
+        body: JSON.stringify(payload),
       });
 
       const resultData = await res.json();
@@ -98,137 +111,226 @@ function CityInfo({ city }) {
     }
   };
 
+  const allAnswered = data?.quiz?.every((_, i) => userAnswers[i] !== undefined);
+  const submitDisabled = submitting || !allAnswered;
+
   return (
-    <div className="w-full h-full flex flex-col">
-      <div className="flex-shrink-0 p-4 border-b flex justify-between items-center">
+    <div className="w-full h-full flex flex-col bg-stone-900">
+
+      {/* ── Header ── */}
+      <div className="flex items-center justify-between px-6 py-4 border-b border-stone-800 shrink-0">
         <div>
-          <h2 className="text-xl font-bold text-indigo-800">City Insights</h2>
-          <p className="text-sm text-gray-500 mt-1"><strong>City:</strong> {city || "Loading..."}</p>
+          <h2 className="text-base font-extrabold text-stone-50 tracking-tight m-0">City Insights</h2>
+          <p className="text-xs text-stone-500 mt-0.5 m-0">{city || "Loading…"}</p>
         </div>
+
         {data && (
           <button
             onClick={generateNewInfo}
             disabled={loading}
-            className="px-3 py-2 text-xs font-semibold text-white bg-indigo-600 rounded-md hover:bg-indigo-700 disabled:bg-gray-400"
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl
+                        border text-xs font-semibold transition-all duration-200
+                        ${loading
+                          ? "bg-stone-700 border-stone-700 text-stone-500 cursor-not-allowed"
+                          : "bg-amber-400/10 border-amber-400/40 text-amber-400 hover:bg-amber-400/20"
+                        }`}
           >
-            {loading ? 'Generating...' : 'Generate New Info'}
+            {loading
+              ? <><Loader2 size={13} className="animate-spin" /> Generating…</>
+              : <><Sparkles size={13} /> Generate New</>
+            }
           </button>
         )}
       </div>
 
-      <div className="flex-grow overflow-y-auto p-4">
-        {loading && <p className="text-indigo-600 font-medium text-center py-4">Loading...</p>}
-        {fetchError && <p className="text-red-600 font-medium text-center py-4">{fetchError}</p>}
+      {/* ── Body ── */}
+      <div className="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-5">
 
+        {/* Loading */}
+        {loading && (
+          <div className="flex flex-col items-center justify-center h-full gap-3 text-stone-500">
+            <Loader2 size={28} className="animate-spin text-amber-400" />
+            <span className="text-sm">Generating insights…</span>
+          </div>
+        )}
+
+        {/* Error */}
+        {fetchError && (
+          <div className="px-4 py-3 rounded-xl bg-red-400/10 border border-red-400/20 text-red-400 text-sm">
+            {fetchError}
+          </div>
+        )}
+
+        {/* Empty state */}
         {!loading && !data && !fetchError && (
-          <div className="text-center py-10">
-            <h3 className="text-lg font-semibold text-gray-700">No info available</h3>
+          <div className="flex flex-col items-center justify-center h-full gap-4 text-center">
+            <div className="w-14 h-14 rounded-2xl bg-amber-400/10 flex items-center justify-center">
+              <Sparkles size={24} className="text-amber-400" />
+            </div>
+            <div>
+              <p className="text-[15px] font-bold text-stone-300 m-0">No info yet</p>
+              <p className="text-[13px] text-stone-500 mt-1 m-0">Generate history, facts & a quiz</p>
+            </div>
             <button
               onClick={generateNewInfo}
-              className="mt-4 px-4 py-2 font-semibold text-white bg-indigo-600 rounded-md hover:bg-indigo-700"
+              className="px-5 py-2.5 rounded-xl bg-amber-400 text-[#1c1400]
+                         text-sm font-bold border-none cursor-pointer
+                         shadow-[0_4px_16px_rgba(251,191,36,0.25)]
+                         hover:bg-amber-300 transition-colors"
             >
               ✨ Generate Info
             </button>
           </div>
         )}
 
+        {/* Main content */}
         {data && !loading && (
-          <div className="space-y-5">
-            <div>
-              <h3 className="text-lg font-bold text-indigo-700 border-b pb-1 mb-2">History & Lore</h3>
-              <p className="text-gray-700 text-sm">{data.history}</p>
-            </div>
-            <div>
-              <h3 className="text-lg font-bold text-indigo-700 border-b pb-1 mb-2">Facts</h3>
-              <ul className="list-disc ml-5 space-y-1 text-gray-700 text-sm">
-                {data.facts?.map((f, i) => <li key={i}>{f}</li>)}
-              </ul>
-            </div>
-            <div>
-              <h3 className="text-lg font-bold text-indigo-700 border-b pb-1 mb-2">Famous Story</h3>
-              <p className="text-gray-700 text-sm">{data.famousStory}</p>
-            </div>
+          <>
+            {/* History */}
+            <section className="bg-[#262220] border border-stone-800 rounded-2xl p-5">
+              <SectionLabel
+                icon={BookOpen} label="Explore the City"
+                colorClass={{ bg: "bg-amber-400/10", icon: "text-amber-400" }}
+              />
+              <p className="text-sm leading-relaxed text-stone-400 m-0">{data.description}</p>
+            </section>
+
+            {/* Facts */}
+            <section className="bg-[#262220] border border-stone-800 rounded-2xl p-5">
+              <SectionLabel
+                icon={Zap} label="Must To Dos"
+                colorClass={{ bg: "bg-sky-400/10", icon: "text-sky-400" }}
+              />
+              <div className="flex flex-col gap-2">
+                {data.mustDo?.map((f, i) => (
+                  <div key={i} className="flex gap-2.5 items-start">
+                    <div className="mt-[7px] w-1.5 h-1.5 rounded-full bg-sky-400 shrink-0" />
+                    <p className="text-sm leading-relaxed text-stone-400 m-0">{f}</p>
+                  </div>
+                ))}
+              </div>
+            </section>
 
             {/* Quiz */}
-            <div>
-              <h3 className="text-lg font-bold text-indigo-700 border-b pb-1 mb-3">Quiz</h3>
-              <div className="space-y-4">
-                {data.quizQuestions.map((q, i) => {
-                  const userAnswer = userAnswers[i];
-                  const correct = result && q.correctAnswerIndex === userAnswer;
+            {data.quiz?.length > 0 && (
+              <section className="bg-[#262220] border border-stone-800 rounded-2xl p-5">
+                <SectionLabel
+                  icon={HelpCircle} label="Quiz"
+                  colorClass={{ bg: "bg-violet-400/10", icon: "text-violet-400" }}
+                />
 
-                  return (
-                    <div
-                      key={i}
-                      className={`border p-3 rounded-lg shadow-sm ${result ? (correct ? "border-green-400 bg-green-50" : "border-red-400 bg-red-50")
-                        : userAnswer != null ? "border-pink-300 bg-pink-50" : "border-indigo-200 bg-indigo-50"
-                        }`}
-                    >
-                      <p className="font-semibold text-gray-800 text-sm mb-2">{i + 1}. {q.question}</p>
-                      <div className="space-y-1 text-xs text-gray-600">
-                        {q.options.map((opt, j) => (
-                          <div key={j} className="flex items-center">
-                            <input
-                              type="radio"
-                              id={`q${i}o${j}`}
-                              name={`q-${i}`}
-                              value={j}
-                              checked={userAnswer === j}
-                              onChange={() => handleAnswerSelect(i, j)}
-                              disabled={!!result}
-                              className="mr-2 h-3 w-3 text-pink-600 border-gray-300 cursor-pointer focus:ring-pink-500"
-                            />
-                            <label
-                              htmlFor={`q${i}o${j}`}
-                              className={`cursor-pointer ${result && j === q.correctAnswerIndex ? "text-green-700 font-medium"
-                                : result && userAnswer === j && j !== q.correctAnswerIndex ? "text-red-700 font-medium" : ""
-                                }`}
-                            >
-                              {opt}
-                            </label>
-                          </div>
-                        ))}
-                      </div>
+                <div className="flex flex-col gap-3.5">
+                  {data.quiz.map((q, i) => {
+                    const userAnswer = userAnswers[i];
+                    const isCorrect  = result && q.correctAnswerIndex === userAnswer;
+                    const isWrong    = result && userAnswer != null && !isCorrect;
 
-                      {result && (
-                        <button
-                          onClick={() => toggleExplanation(i)}
-                          className="text-xs text-blue-600 underline mt-2"
-                        >
-                          {showExplanations[i] ? "Hide Explanation" : "Show Explanation"}
-                        </button>
-                      )}
-                      {showExplanations[i] && result && (
-                        <div className="mt-2 p-2 bg-gray-100 text-gray-700 rounded text-xs">
-                          <strong>Explanation:</strong> {q.explanation}
+                    const cardClass = result
+                      ? isCorrect
+                        ? "border-green-400 bg-green-400/[0.06]"
+                        : "border-red-400 bg-red-400/[0.06]"
+                      : userAnswer != null
+                        ? "border-violet-400 bg-violet-400/[0.06]"
+                        : "border-stone-700 bg-[#1a1715]";
+
+                    return (
+                      <div key={i} className={`border rounded-xl p-4 transition-all duration-200 ${cardClass}`}>
+                        <p className="text-sm font-semibold text-stone-50 mb-2.5 m-0">
+                          {i + 1}. {q.question}
+                        </p>
+
+                        <div className="flex flex-col gap-1.5">
+                          {q.options?.map((opt, j) => {
+                            const isSelected      = userAnswer === j;
+                            const isRightAnswer   = result && j === q.correctAnswerIndex;
+                            const isWrongSelected = result && isSelected && j !== q.correctAnswerIndex;
+
+                            return (
+                              <label
+                                key={j}
+                                className={`flex items-center gap-2.5 px-2 py-1.5 rounded-lg
+                                            transition-colors duration-150 cursor-pointer
+                                            ${result ? "cursor-default" : "cursor-pointer"}
+                                            ${isRightAnswer   ? "bg-green-400/10" : ""}
+                                            ${isWrongSelected ? "bg-red-400/10"   : ""}
+                                         `}
+                              >
+                                <input
+                                  type="radio"
+                                  name={`q-${i}`}
+                                  value={j}
+                                  checked={isSelected}
+                                  onChange={() => handleAnswerSelect(i, j)}
+                                  disabled={!!result}
+                                  className="accent-violet-400 cursor-pointer"
+                                />
+                                <span className={`text-sm flex-1
+                                  ${isRightAnswer   ? "text-green-400 font-semibold" :
+                                    isWrongSelected ? "text-red-400 font-semibold"   :
+                                    isSelected      ? "text-stone-50"                : "text-stone-400"}`}>
+                                  {opt}
+                                </span>
+                                {isRightAnswer   && <CheckCircle2 size={13} className="text-green-400 ml-auto" />}
+                                {isWrongSelected && <XCircle      size={13} className="text-red-400 ml-auto"   />}
+                              </label>
+                            );
+                          })}
                         </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
 
-              <button
-                onClick={handleSubmitQuiz}
-                disabled={submitting || Object.keys(userAnswers).length !== data.quizQuestions?.length}
-                className={`mt-4 px-4 py-2 text-white rounded-md text-sm transition w-full font-semibold ${submitting || Object.keys(userAnswers).length !== data.quizQuestions?.length
-                  ? 'bg-gray-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700 shadow-md'
-                  }`}
-              >
-                {submitting ? "Submitting..." : "Submit Quiz"}
-              </button>
+                        {/* Explanation toggle */}
+                        {result && (
+                          <button
+                            onClick={() => toggleExplanation(i)}
+                            className="flex items-center gap-1.5 mt-2.5 text-blue-400
+                                       text-xs font-semibold bg-transparent border-none
+                                       cursor-pointer p-0 hover:text-blue-300 transition-colors"
+                          >
+                            {showExplanations[i] ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+                            {showExplanations[i] ? "Hide" : "Show"} Explanation
+                          </button>
+                        )}
 
-              <div className="mt-3 text-center text-sm">
+                        {showExplanations[i] && result && (
+                          <div className="mt-2.5 px-3.5 py-2.5 rounded-xl
+                                          bg-white/[0.04] border border-stone-800
+                                          text-xs leading-relaxed text-stone-400">
+                            <strong className="text-stone-50">Explanation: </strong>{q.explanation}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Submit button */}
+                <button
+                  onClick={handleSubmitQuiz}
+                  disabled={submitDisabled}
+                  className={`mt-4 w-full py-2.5 rounded-xl border-none
+                              text-sm font-bold transition-all duration-200
+                              ${submitDisabled
+                                ? "bg-stone-700 text-stone-500 cursor-not-allowed"
+                                : "bg-violet-500 text-white cursor-pointer hover:bg-violet-400 shadow-[0_4px_16px_rgba(167,139,250,0.25)]"
+                              }`}
+                >
+                  {submitting ? "Submitting…" : "Submit Quiz"}
+                </button>
+
+                {/* Result banner */}
                 {result?.error ? (
-                  <p className="text-red-600 font-medium">Error: {result.error}</p>
-                ) : result?.score !== undefined ? (
-                  <p className="text-green-600 font-semibold">
-                    ✅ Your Score: {result.score} / {data.quizQuestions.length}
+                  <p className="mt-3 text-center text-sm text-red-400 font-medium">
+                    Error: {result.error}
                   </p>
+                ) : result?.score !== undefined ? (
+                  <div className="mt-3 px-4 py-3 rounded-xl text-center
+                                  bg-green-400/10 border border-green-400/20
+                                  text-sm font-bold text-green-400">
+                    ✅ {result.score} / {data.quiz.length} correct
+                  </div>
                 ) : null}
-              </div>
-            </div>
-          </div>
+              </section>
+            )}
+          </>
         )}
       </div>
     </div>
