@@ -135,3 +135,50 @@ exports.sendGroupMessage = async (req, res) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
+
+// DELETE /api/groups/:id/leave  — logged-in user leaves a group
+exports.leaveGroup = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user._id;
+
+    const group = await Group.findById(id);
+    if (!group) return res.status(404).json({ error: "Group not found" });
+
+    const isMember = group.members.some(
+      (m) => m.toString() === userId.toString()
+    );
+    if (!isMember) return res.status(403).json({ error: "Not a member of this group" });
+
+    // Remove the user from the members array
+    group.members = group.members.filter(
+      (m) => m.toString() !== userId.toString()
+    );
+    await group.save();
+
+    // ── Socket: notify remaining members & remove user from room ──────────
+    try {
+      const { io, userSocketMap } = require("../socket");
+
+      // Broadcast to the room so other members update their member count
+      io.to(id).emit("group_member_left", {
+        groupId: id,
+        userId: userId.toString(),
+      });
+
+      // Remove the leaving user's socket from the Socket.IO room
+      const socketId = userSocketMap[userId.toString()];
+      if (socketId) {
+        const userSocket = io.sockets.sockets.get(socketId);
+        if (userSocket) userSocket.leave(id);
+      }
+    } catch (_) {
+      // Socket errors must never block the HTTP response
+    }
+
+    res.json({ message: "Left group successfully" });
+  } catch (err) {
+    console.error("leaveGroup error:", err);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
