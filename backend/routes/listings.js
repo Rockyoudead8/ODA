@@ -11,6 +11,9 @@ router.get("/listing", c.handleFetchAll);
 // listings fetch by ID
 router.get("/listing/:id", c.handleFetchbyID);
 
+// fetch ALL cities  ← NEW
+// router.get("/cities", c.handleFetchAllCities);
+
 // fetch the city based on its name
 router.get("/cities/:name", c.handlefetchbyName);
 

@@ -1,17 +1,19 @@
 const express = require("express");
 const router = express.Router();
 const QuizResult = require("../models/QuizResult");
-const isLoggedIn = require("../middlewares/mw"); // make sure you have auth middleware
+const CityPoints = require("../models/CityPoints");
+const isLoggedIn = require("../middlewares/mw");
 const passport = require("passport");
 
 // POST /api/submit_quiz/  (keep this for submitting quizzes)
-router.post("/", passport.authenticate("jwt", { session: false }) , async (req, res) => {
+router.post("/", passport.authenticate("jwt", { session: false }), async (req, res) => {
   try {
     const { city, userAnswers, correctAnswers } = req.body;
-    
-    if (!req.user){
+
+    if (!req.user) {
       console.log("Not authenticated");
-      return res.status(401).json({ error: "Not authenticated" }) };
+      return res.status(401).json({ error: "Not authenticated" });
+    }
 
     if (!city || !userAnswers || !correctAnswers) {
       return res.status(400).json({ error: "Missing required data." });
@@ -28,7 +30,7 @@ router.post("/", passport.authenticate("jwt", { session: false }) , async (req, 
     });
 
     const newResult = new QuizResult({
-      userId: req.user._id, // use session user
+      userId: req.user._id,
       city,
       score,
       totalQuestions: correctAnswers.length,
@@ -37,10 +39,24 @@ router.post("/", passport.authenticate("jwt", { session: false }) , async (req, 
 
     await newResult.save();
 
+    // Award quiz points: each correct answer = 10 points
+    const pointsEarned = score * 10;
+    if (pointsEarned > 0) {
+      await CityPoints.findOneAndUpdate(
+        { userId: req.user._id, cityName: city },
+        {
+          $inc: { quizPoints: pointsEarned },
+          $set: { updatedAt: new Date() },
+        },
+        { upsert: true, new: true }
+      );
+    }
+
     res.status(200).json({
       message: "Quiz submitted successfully",
       score,
       totalQuestions: correctAnswers.length,
+      pointsEarned,
     });
   } catch (err) {
     console.error(err);

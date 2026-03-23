@@ -18,7 +18,7 @@ const placesRoutes = require("./routes/places");
 const sendOTPRouter = require("./routes/sendOTP");
 const MessageRouter = require("./routes/message.route.js");
 const GroupRouter = require("./routes/group_route.js");
-
+const cityPointsRouter = require("./routes/cityPoints");
 
 const generateSoundRoute = require('./routes/generateSound');
 var listingsRouter = require('./routes/listings');
@@ -31,10 +31,9 @@ const GoogleStrategy = require("passport-google-oauth20").Strategy;
 const jwt_strategy = require("./config/passport");
 const {app, server} = require("./config/socket");
 
-// const app = require("./config/socket").app;
 console.log("APP FILE STARTED");
 
-// cors // 
+// cors //
 app.use(cors({
   origin: 'http://localhost:3000', // React's port
   credentials: true
@@ -87,7 +86,6 @@ passport.use(new GoogleStrategy({
 
 
       if (!user) {
-        // we are signing up the user 
         console.log(profile);
         const newUser = new userModel({
           googleId: profile.id,
@@ -99,7 +97,6 @@ passport.use(new GoogleStrategy({
         return done(null, newUser);
       }
       else {
-        // we are logining in the user 
         if (!user.googleId) {
           user.googleId = profile.id;
           await user.save();
@@ -124,16 +121,11 @@ app.use(logger('dev'));
 app.use('/', indexRouter);
 
 app.use('/api/', listingsRouter);
-app.use('/api/auth', usersRouter); // user auth routes 
+app.use('/api/auth', usersRouter); // user auth routes
 app.use('/api', usersRouter); // for visit tracking routes like toggle-visit and check-visit
 app.use("/api/auth/send-otp", sendOTPRouter);
-// app.use('/api/toggle-visit', usersRouter);
-// app.use('/api/check-visit', usersRouter);
-
-// app.use(isLoggedIn); // Middleware to check if user is logged in for all routes below this line 
 
 app.use('/api/generate-sound', generateSoundRoute);
-// app.use('/api/get_visits',usersRouter);
 app.use('/api', commentsRoute);
 app.use('/api/generate_info', infoRouter);
 app.use('/api/submit_quiz', submitRouter);
@@ -141,14 +133,17 @@ app.use("/api/upload", uploadRoutes);
 app.use('/api/leaderboard', QuizRouter);
 app.use('/api/geocode-cities', geminiRoute);
 
-// for the commuinity page
+// for the community page
 app.use("/api/community", communityRoutes);
 
 // for fetching places from geoapify and caching them in MongoDB
 app.use("/api/places", placesRoutes);
 
-app.use("/api/messages",MessageRouter);
+app.use("/api/messages", MessageRouter);
 app.use("/api/groups", GroupRouter);
+
+// city-based points system (quiz + comments + posts)
+app.use("/api/city-points", cityPointsRouter);
 
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
@@ -157,11 +152,9 @@ app.use(function (req, res, next) {
 
 // error handler
 app.use(function (err, req, res, next) {
-  // set locals, only providing error in development
   res.locals.message = err.message;
   res.locals.error = req.app.get('env') === 'development' ? err : {};
 
-  // render the error page
   res.status(err.status || 500);
   res.render('error');
 });

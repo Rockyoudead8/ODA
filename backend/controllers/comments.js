@@ -3,13 +3,16 @@ const express = require("express");
 const User = require("../models/users");
 const Comment = require("../models/comment");
 const Listing = require("../models/listings");
+const CityPoints = require("../models/CityPoints");
 
 exports.postComments = async (req, res) => {
   try {
-    const { listing, text, image} = req.body;
+    const { listing, text, image } = req.body;
 
     if (!listing || (!text && !image)) {
-      return res.status(400).json({ error: "Listing and comment text or image are required" });
+      return res
+        .status(400)
+        .json({ error: "Listing and comment text or image are required" });
     }
 
     const listingExists = await Listing.findById(listing);
@@ -26,6 +29,16 @@ exports.postComments = async (req, res) => {
 
     await newComment.save();
 
+    // Award 5 comment points for this city
+    await CityPoints.findOneAndUpdate(
+      { userId: req.user._id, cityName: listingExists.title },
+      {
+        $inc: { commentPoints: 5 },
+        $set: { updatedAt: new Date() },
+      },
+      { upsert: true, new: true }
+    );
+
     const populatedComment = await newComment.populate("user", "name email");
 
     res.status(201).json(populatedComment);
@@ -40,7 +53,7 @@ exports.getComments = async (req, res) => {
     const { listingId } = req.params;
 
     const comments = await Comment.find({ listing: listingId })
-      .populate("user", "name email") 
+      .populate("user", "name email")
       .sort({ createdAt: -1 });
 
     res.json(comments);
@@ -48,4 +61,4 @@ exports.getComments = async (req, res) => {
     console.error("Error fetching comments:", err);
     res.status(500).json({ error: "Internal server error" });
   }
-}
+};
