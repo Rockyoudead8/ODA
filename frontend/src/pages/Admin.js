@@ -7,7 +7,7 @@ import {
 import {
   MapPin, UploadCloud, Loader2, X, CheckCircle, Award, Target,
   BookOpen, Compass, TrendingUp, Globe, Star, MessageCircle,
-  FileText, Zap, Camera, User,
+  FileText, Zap, Camera, User, Edit3, Save, Trash2, MessageSquare,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import UserVisitedMap from "../components/UserVisitedMap";
@@ -27,6 +27,32 @@ const BADGE_TIERS = [
   { min:   0, label: "No Points Yet",    color: "#9ca3af", bg: "rgba(156,163,175,0.15)", emoji: "👤" },
 ];
 const getBadge = (total) => BADGE_TIERS.find((t) => total >= t.min) || BADGE_TIERS[BADGE_TIERS.length - 1];
+
+// ─── Avatar component ──────────────────────────────────────────────────────
+function Avatar({ user, size = "sm", className = "" }) {
+  const sizeMap = {
+    xs: "w-6 h-6 text-[10px]",
+    sm: "w-8 h-8 text-xs",
+    md: "w-10 h-10 text-sm",
+    lg: "w-14 h-14 text-lg",
+    xl: "w-20 h-20 text-2xl",
+  };
+  const dim = sizeMap[size] || sizeMap.sm;
+  if (user?.profilePhoto) {
+    return (
+      <img
+        src={user.profilePhoto}
+        alt={user.name || "avatar"}
+        className={`${dim} rounded-full object-cover border-2 border-violet-500/40 shrink-0 ${className}`}
+      />
+    );
+  }
+  return (
+    <div className={`${dim} rounded-full bg-gradient-to-br from-violet-700 to-pink-600 text-white font-bold flex items-center justify-center shrink-0 ${className}`}>
+      {user?.name?.[0]?.toUpperCase() || "U"}
+    </div>
+  );
+}
 
 const StatCard = ({ icon, label, value, color, delay = 0 }) => (
   <motion.div
@@ -52,22 +78,36 @@ const EmptyState = ({ msg }) => (
 
 const Admin = () => {
   const { user: contextUser, setUser: setContextUser } = useContext(UserContext);
-  const [userData, setUserData] = useState(null);
-  const [quizResults, setQuizResults] = useState([]);
-  const [cityStats, setCityStats] = useState({ cities: [], overallTotal: 0 });
+  const [userData, setUserData]                               = useState(null);
+  const [quizResults, setQuizResults]                         = useState([]);
+  const [cityStats, setCityStats]                             = useState({ cities: [], overallTotal: 0 });
   const [visitedCitiesWithCoords, setVisitedCitiesWithCoords] = useState([]);
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
-  const [newCityName, setNewCityName] = useState("");
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadMessage, setUploadMessage] = useState({ type: "", text: "" });
-  // Merged: "overview", "analytics", "map"
-  const [activeTab, setActiveTab] = useState("overview");
+  const [error, setError]                                     = useState("");
+  const [loading, setLoading]                                 = useState(true);
+  const [isUploadModalOpen, setIsUploadModalOpen]             = useState(false);
+  const [newCityName, setNewCityName]                         = useState("");
+  const [isUploading, setIsUploading]                         = useState(false);
+  const [uploadMessage, setUploadMessage]                     = useState({ type: "", text: "" });
+  const [activeTab, setActiveTab]                             = useState("overview");
+
   // Profile photo
   const [photoUploading, setPhotoUploading] = useState(false);
   const fileInputRef = useRef(null);
 
+  // Edit profile state
+  const [isEditing, setIsEditing]         = useState(false);
+  const [editForm, setEditForm]           = useState({ name: "", bio: "", defaultCity: "" });
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileMsg, setProfileMsg]       = useState({ type: "", text: "" });
+
+  // Activity (my posts & comments)
+  const [userPosts, setUserPosts]                   = useState([]);
+  const [activityLoading, setActivityLoading]       = useState(false);
+  const [activityTab, setActivityTab]               = useState("posts");
+  const [deletingPostId, setDeletingPostId]         = useState(null);
+  const [deletingCommentKey, setDeletingCommentKey] = useState(null);
+
+  // ── Fetch ────────────────────────────────────────────────────────────────
   useEffect(() => {
     const fetchInitialData = async () => {
       try {
@@ -98,6 +138,28 @@ const Admin = () => {
     }).then(r => r.json()).then(setVisitedCitiesWithCoords).catch(console.error);
   }, [userData]);
 
+  // Sync edit form when userData loads
+  useEffect(() => {
+    if (userData) {
+      setEditForm({ name: userData.name || "", bio: userData.bio || "", defaultCity: userData.defaultCity || "" });
+    }
+  }, [userData]);
+
+  // Fetch user posts when activity tab is opened
+  useEffect(() => {
+    if (activeTab !== "activity") return;
+    const fetchPosts = async () => {
+      setActivityLoading(true);
+      try {
+        const res = await fetch("http://localhost:8000/api/community/my-posts", { credentials: "include" });
+        if (res.ok) setUserPosts(await res.json());
+      } catch (e) { console.error(e); }
+      finally { setActivityLoading(false); }
+    };
+    fetchPosts();
+  }, [activeTab]);
+
+  // ── Handlers ─────────────────────────────────────────────────────────────
   const handleUploadCity = async (e) => {
     e.preventDefault();
     if (!newCityName.trim()) return;
@@ -132,7 +194,53 @@ const Admin = () => {
     finally { setPhotoUploading(false); }
   };
 
-  // Derived quiz data
+  const handleSaveProfile = async () => {
+    setProfileSaving(true); setProfileMsg({ type: "", text: "" });
+    try {
+      const res = await fetch("http://localhost:8000/api/auth/update-profile", {
+        method: "PUT", credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(editForm),
+      });
+      if (res.ok) {
+        setUserData(prev => ({ ...prev, ...editForm }));
+        if (setContextUser) setContextUser(prev => ({ ...prev, ...editForm }));
+        setProfileMsg({ type: "success", text: "Profile updated successfully!" });
+        setTimeout(() => { setIsEditing(false); setProfileMsg({ type: "", text: "" }); }, 1500);
+      } else {
+        setProfileMsg({ type: "error", text: "Failed to update profile." });
+      }
+    } catch { setProfileMsg({ type: "error", text: "Something went wrong." }); }
+    finally { setProfileSaving(false); }
+  };
+
+  const handleDeletePost = async (postId) => {
+    if (!window.confirm("Delete this post permanently?")) return;
+    setDeletingPostId(postId);
+    try {
+      await fetch(`http://localhost:8000/api/community/${postId}`, { method: "DELETE", credentials: "include" });
+      setUserPosts(prev => prev.filter(p => p._id?.toString() !== postId.toString()));
+    } catch (e) { console.error(e); }
+    finally { setDeletingPostId(null); }
+  };
+
+  const handleDeleteComment = async (postId, commentId) => {
+    if (!window.confirm("Delete this comment?")) return;
+    const key = `${postId}-${commentId}`;
+    setDeletingCommentKey(key);
+    try {
+      await fetch(`http://localhost:8000/api/community/${postId}/comment/${commentId}`, {
+        method: "DELETE", credentials: "include",
+      });
+      setUserPosts(prev => prev.map(p => {
+        if (p._id?.toString() !== postId.toString()) return p;
+        return { ...p, comments: p.comments.filter(c => c._id?.toString() !== commentId.toString()) };
+      }));
+    } catch (e) { console.error(e); }
+    finally { setDeletingCommentKey(null); }
+  };
+
+  // ── Derived quiz data ──────────────────────────────────────────────────────
   const cityPerformance = quizResults.reduce((acc, { city, score }) => {
     if (!acc[city]) acc[city] = { totalScore: 0, count: 0 };
     acc[city].totalScore += score; acc[city].count++;
@@ -141,12 +249,6 @@ const Admin = () => {
   const totalQuizzes = quizResults.length;
   const overallAvgScore = totalQuizzes > 0
     ? (quizResults.reduce((s, q) => s + q.score, 0) / totalQuizzes).toFixed(1) : 0;
-  let bestCity = "N/A";
-  if (Object.keys(cityPerformance).length > 0) {
-    bestCity = Object.keys(cityPerformance).reduce((a, b) =>
-      cityPerformance[a].totalScore / cityPerformance[a].count >
-      cityPerformance[b].totalScore / cityPerformance[b].count ? a : b);
-  }
 
   const chartOptions = {
     responsive: true, maintainAspectRatio: false,
@@ -180,12 +282,26 @@ const Admin = () => {
   const stackedBarOptions = { ...chartOptions, scales: { ...chartOptions.scales, x: { ...chartOptions.scales.x, stacked: true }, y: { ...chartOptions.scales.y, stacked: true } } };
 
   const overallBadge = getBadge(cityStats.overallTotal);
+
+  // My comments — extracted from userPosts (comments the user left on their own posts)
+  const myComments = userPosts.flatMap(post =>
+    (post.comments || [])
+      .filter(c => {
+        const cUserId = (c.user?._id ?? c.user)?.toString();
+        return cUserId === userData?._id?.toString();
+      })
+      .map(c => ({ ...c, postId: post._id, postCity: post.city, postContent: post.content }))
+  );
+
   const tabs = [
-    { id: "overview",  label: "Overview",  icon: <Compass size={14} /> },
-    { id: "analytics", label: "Analytics", icon: <TrendingUp size={14} /> },
-    { id: "map",       label: "World Map", icon: <Globe size={14} /> },
+    { id: "overview",  label: "Overview",    icon: <Compass size={14} /> },
+    { id: "analytics", label: "Analytics",   icon: <TrendingUp size={14} /> },
+    { id: "map",       label: "World Map",   icon: <Globe size={14} /> },
+    { id: "profile",   label: "Profile",     icon: <User size={14} /> },
+    { id: "activity",  label: "My Activity", icon: <FileText size={14} /> },
   ];
 
+  // ── Loading / Error ────────────────────────────────────────────────────────
   if (loading) return (
     <div className="min-h-screen bg-zinc-900 flex flex-col items-center justify-center gap-3">
       <Loader2 size={28} className="text-violet-400 animate-spin" />
@@ -204,37 +320,38 @@ const Admin = () => {
     <div className="flex min-h-screen bg-zinc-900 text-zinc-100 font-sans">
 
       {/* ── Sidebar ── */}
-      <div className="w-56 shrink-0 bg-zinc-900 border-r border-zinc-800 flex flex-col px-3 py-5 sticky top-0 h-screen overflow-y-auto hidden md:flex">
+      <div className="w-[230px] shrink-0 bg-zinc-900 border-r border-zinc-800 flex flex-col px-3 py-5 sticky top-0 h-screen overflow-y-auto hidden md:flex">
         {/* Brand */}
         <div className="flex items-center gap-2 px-2 mb-5">
           <Compass size={18} className="text-violet-400" />
           <span className="text-sm font-bold text-zinc-100">Explorer</span>
         </div>
 
-        {/* Profile block with photo upload */}
+        {/* Profile block — centred with medium avatar */}
         <div className="bg-zinc-800/70 border border-zinc-700/60 rounded-xl p-3 mb-3">
-          <div className="flex items-center gap-2.5">
-            <div className="relative shrink-0">
-              {userData.profilePhoto ? (
-                <img src={userData.profilePhoto} alt="avatar" className="w-9 h-9 rounded-full object-cover border-2 border-violet-500/50" />
-              ) : (
-                <div className="w-9 h-9 rounded-full bg-violet-900/50 border border-violet-700/50 text-violet-300 font-bold text-sm flex items-center justify-center">
-                  {userData.name?.[0]?.toUpperCase() || "U"}
-                </div>
-              )}
+          <div className="flex flex-col items-center gap-2 text-center">
+            <div className="relative">
+              <Avatar user={userData} size="lg" />
               <button
                 onClick={() => fileInputRef.current?.click()}
-                className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-violet-600 hover:bg-violet-500 flex items-center justify-center transition-colors"
+                className="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full bg-violet-600 hover:bg-violet-500 flex items-center justify-center transition-colors shadow-lg"
                 title="Change photo"
               >
-                {photoUploading ? <Loader2 size={9} className="animate-spin text-white" /> : <Camera size={9} className="text-white" />}
+                {photoUploading ? <Loader2 size={10} className="animate-spin text-white" /> : <Camera size={10} className="text-white" />}
               </button>
               <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
             </div>
-            <div className="min-w-0">
-              <p className="text-xs font-semibold text-zinc-100 truncate">{userData.name}</p>
-              <p className="text-[10px] text-zinc-500 truncate mt-0.5">{userData.email}</p>
+            <div className="min-w-0 w-full">
+              <p className="text-sm font-semibold text-zinc-100 truncate">{userData.name}</p>
+              <p className="text-[10px] text-zinc-500 truncate">{userData.email}</p>
+              {userData.bio && <p className="text-[10px] text-zinc-400 mt-1 line-clamp-2 leading-relaxed">{userData.bio}</p>}
             </div>
+            <button
+              onClick={() => setActiveTab("profile")}
+              className="text-[10px] text-violet-400 hover:text-violet-300 flex items-center gap-1 transition-colors"
+            >
+              <Edit3 size={9} /> Edit Profile
+            </button>
           </div>
         </div>
 
@@ -295,7 +412,7 @@ const Admin = () => {
             <h1 className="text-xl font-bold text-zinc-100">Hey, {userData.name?.split(" ")[0] || "Explorer"} 👋</h1>
             <p className="text-xs text-zinc-500 mt-1">Here's what's happening with your travels</p>
           </div>
-          <div className="flex items-center gap-1.5 bg-zinc-800 border border-zinc-700 rounded-xl p-1">
+          <div className="flex items-center gap-1 bg-zinc-800 border border-zinc-700 rounded-xl p-1 flex-wrap">
             {tabs.map(t => (
               <button key={t.id} onClick={() => setActiveTab(t.id)}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
@@ -313,6 +430,55 @@ const Admin = () => {
           {/* ── OVERVIEW ── */}
           {activeTab === "overview" && (
             <motion.div key="overview" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
+
+              {/* Profile banner */}
+              <div className="bg-zinc-800/60 border border-zinc-700/60 rounded-2xl overflow-hidden mb-5">
+                <div className="h-16 bg-gradient-to-r from-violet-900 to-pink-900/60" />
+                <div className="px-6 pb-5">
+                  <div className="flex items-end gap-4 -mt-8 mb-4">
+                    <div className="relative">
+                      <Avatar user={userData} size="xl" className="border-4 border-zinc-800 shadow-xl" />
+                      <button
+                        onClick={() => fileInputRef.current?.click()}
+                        className="absolute bottom-0 right-0 w-6 h-6 rounded-full bg-violet-600 hover:bg-violet-500 flex items-center justify-center transition-colors shadow-lg border-2 border-zinc-800"
+                        title="Change photo"
+                      >
+                        {photoUploading ? <Loader2 size={11} className="animate-spin text-white" /> : <Camera size={11} className="text-white" />}
+                      </button>
+                    </div>
+                    <div className="pb-1 min-w-0 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h2 className="text-lg font-bold text-zinc-100">{userData.name}</h2>
+                        <span className="text-xs px-2 py-0.5 rounded-full border" style={{ background: overallBadge.bg, color: overallBadge.color, borderColor: `${overallBadge.color}40` }}>
+                          {overallBadge.emoji} {overallBadge.label}
+                        </span>
+                      </div>
+                      <p className="text-xs text-zinc-500 mt-0.5">{userData.email}</p>
+                      {userData.bio && <p className="text-xs text-zinc-400 mt-1 line-clamp-1">{userData.bio}</p>}
+                    </div>
+                    <button
+                      onClick={() => setActiveTab("profile")}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-zinc-400 border border-zinc-700 rounded-lg hover:bg-zinc-700 hover:text-zinc-200 transition-colors shrink-0"
+                    >
+                      <Edit3 size={12} /> Edit Profile
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-4 gap-3">
+                    {[
+                      { label: "Cities",   val: userData.citiesVisited || 0 },
+                      { label: "Quizzes",  val: totalQuizzes },
+                      { label: "Avg Score", val: `${overallAvgScore}%` },
+                      { label: "Points",   val: cityStats.overallTotal },
+                    ].map(({ label, val }) => (
+                      <div key={label} className="text-center bg-zinc-700/30 rounded-xl py-2.5">
+                        <p className="text-base font-bold text-zinc-100">{val}</p>
+                        <p className="text-[10px] text-zinc-500 mt-0.5">{label}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
                 <StatCard icon={<BookOpen size={17} />} label="Quizzes Taken"   value={totalQuizzes}               color="#8b5cf6" delay={0.05} />
                 <StatCard icon={<Target size={17} />}   label="Average Score"   value={`${overallAvgScore}%`}      color="#34d399" delay={0.1}  />
@@ -346,18 +512,16 @@ const Admin = () => {
                   <h2 className="text-sm font-semibold text-zinc-200">Your World Map</h2>
                   <span className="ml-auto text-[10px] bg-zinc-700 border border-zinc-600 rounded-full px-2.5 py-0.5 text-zinc-300">{userData.visitedCities?.length || 0} cities</span>
                 </div>
-                <div className="rounded-xl overflow-hidden">
+                <div className="rounded-xl overflow-hidden" style={{ minHeight: "320px" }}>
                   <UserVisitedMap visitedCities={visitedCitiesWithCoords} />
                 </div>
               </div>
             </motion.div>
           )}
 
-          {/* ── ANALYTICS (merged Quiz Analytics + Points) ── */}
+          {/* ── ANALYTICS ── */}
           {activeTab === "analytics" && (
             <motion.div key="analytics" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
-
-              {/* Points summary row */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
                 <StatCard icon={<Star size={17} />}          label="Quiz Points"    value={cityStats.cities.reduce((s,c)=>s+c.quizPoints,0)}    color="#8b5cf6" delay={0.05} />
                 <StatCard icon={<MessageCircle size={17} />} label="Comment Points" value={cityStats.cities.reduce((s,c)=>s+c.commentPoints,0)} color="#34d399" delay={0.1}  />
@@ -365,7 +529,6 @@ const Admin = () => {
                 <StatCard icon={<Zap size={17} />}           label="Total Points"   value={cityStats.overallTotal}                               color="#f472b6" delay={0.2}  />
               </div>
 
-              {/* Charts row */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
                 <div className="bg-zinc-800/60 border border-zinc-700/60 rounded-2xl p-5">
                   <div className="flex items-center gap-2 mb-4"><TrendingUp size={14} className="text-zinc-400" /><h2 className="text-sm font-semibold text-zinc-200">Score Over Time</h2></div>
@@ -379,7 +542,6 @@ const Admin = () => {
                 </div>
               </div>
 
-              {/* Points per city bar chart */}
               {cityStats.cities.length > 0 && (
                 <div className="bg-zinc-800/60 border border-zinc-700/60 rounded-2xl p-5 mb-4">
                   <div className="flex items-center gap-2 mb-4"><TrendingUp size={14} className="text-zinc-400" /><h2 className="text-sm font-semibold text-zinc-200">Points Per City</h2></div>
@@ -394,7 +556,6 @@ const Admin = () => {
                 </div>
               )}
 
-              {/* Quiz results table */}
               {quizResults.length > 0 && (
                 <div className="bg-zinc-800/60 border border-zinc-700/60 rounded-2xl p-5 mb-4">
                   <div className="flex items-center gap-2 mb-4"><BookOpen size={14} className="text-zinc-400" /><h2 className="text-sm font-semibold text-zinc-200">Recent Quiz Results</h2></div>
@@ -424,7 +585,6 @@ const Admin = () => {
                 </div>
               )}
 
-              {/* City breakdown table */}
               {cityStats.cities.length > 0 && (
                 <div className="bg-zinc-800/60 border border-zinc-700/60 rounded-2xl p-5">
                   <div className="flex items-center gap-2 mb-4">
@@ -484,6 +644,246 @@ const Admin = () => {
               </div>
             </motion.div>
           )}
+
+          {/* ── PROFILE ── */}
+          {activeTab === "profile" && (
+            <motion.div key="profile" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
+              <div className="max-w-2xl">
+
+                {/* Photo section */}
+                <div className="bg-zinc-800/60 border border-zinc-700/60 rounded-2xl overflow-hidden mb-4">
+                  <div className="h-20 bg-gradient-to-r from-violet-900 to-pink-900/60" />
+                  <div className="px-6 pb-6">
+                    <div className="flex items-end gap-5 -mt-10 mb-5">
+                      <div className="relative">
+                        <Avatar user={userData} size="xl" className="border-4 border-zinc-800 shadow-2xl" />
+                        <button
+                          onClick={() => fileInputRef.current?.click()}
+                          className="absolute bottom-0 right-0 w-7 h-7 rounded-full bg-violet-600 hover:bg-violet-500 flex items-center justify-center transition-colors shadow-lg border-2 border-zinc-800"
+                          title="Change photo"
+                        >
+                          {photoUploading ? <Loader2 size={12} className="animate-spin text-white" /> : <Camera size={12} className="text-white" />}
+                        </button>
+                        <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
+                      </div>
+                      <div className="pb-1">
+                        <h2 className="text-xl font-bold text-zinc-100">{userData.name}</h2>
+                        <p className="text-xs text-zinc-500">{userData.email}</p>
+                        <p className="text-xs text-zinc-500 mt-0.5">Member since {new Date(userData.createdAt).toLocaleDateString("en-US", { year: "numeric", month: "long" })}</p>
+                      </div>
+                    </div>
+                    <p className="text-xs text-zinc-500">Click the camera icon to upload a new profile photo</p>
+                  </div>
+                </div>
+
+                {/* Edit form */}
+                <div className="bg-zinc-800/60 border border-zinc-700/60 rounded-2xl p-6">
+                  <div className="flex items-center justify-between mb-5">
+                    <div className="flex items-center gap-2">
+                      <Edit3 size={15} className="text-zinc-400" />
+                      <h2 className="text-sm font-semibold text-zinc-200">Edit Profile</h2>
+                    </div>
+                    {!isEditing && (
+                      <button
+                        onClick={() => { setIsEditing(true); setProfileMsg({ type: "", text: "" }); }}
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-violet-400 border border-violet-800/60 rounded-lg hover:bg-violet-900/30 transition-colors"
+                      >
+                        <Edit3 size={12} /> Edit
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-zinc-400 mb-1.5">Display Name</label>
+                      {isEditing ? (
+                        <input value={editForm.name} onChange={e => setEditForm(prev => ({ ...prev, name: e.target.value }))}
+                          className="w-full px-3 py-2.5 bg-zinc-700/60 border border-zinc-600 rounded-xl text-sm text-zinc-100 placeholder-zinc-500 outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500/30 transition"
+                          placeholder="Your name" />
+                      ) : (
+                        <p className="text-sm text-zinc-200 bg-zinc-700/30 px-3 py-2.5 rounded-xl border border-zinc-700/40">{userData.name || "—"}</p>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-zinc-400 mb-1.5">Email <span className="text-zinc-600 font-normal">(cannot be changed)</span></label>
+                      <p className="text-sm text-zinc-400 bg-zinc-800/40 px-3 py-2.5 rounded-xl border border-zinc-700/30">{userData.email}</p>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-zinc-400 mb-1.5">Bio</label>
+                      {isEditing ? (
+                        <textarea value={editForm.bio} onChange={e => setEditForm(prev => ({ ...prev, bio: e.target.value }))}
+                          rows={3} className="w-full px-3 py-2.5 bg-zinc-700/60 border border-zinc-600 rounded-xl text-sm text-zinc-100 placeholder-zinc-500 outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500/30 transition resize-none"
+                          placeholder="Tell us a bit about yourself…" />
+                      ) : (
+                        <p className="text-sm text-zinc-300 bg-zinc-700/30 px-3 py-2.5 rounded-xl border border-zinc-700/40 min-h-[56px]">
+                          {userData.bio || <span className="text-zinc-600">No bio added yet</span>}
+                        </p>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-zinc-400 mb-1.5">Home City</label>
+                      {isEditing ? (
+                        <input value={editForm.defaultCity} onChange={e => setEditForm(prev => ({ ...prev, defaultCity: e.target.value }))}
+                          className="w-full px-3 py-2.5 bg-zinc-700/60 border border-zinc-600 rounded-xl text-sm text-zinc-100 placeholder-zinc-500 outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500/30 transition"
+                          placeholder="e.g. Mumbai, India" />
+                      ) : (
+                        <p className="text-sm text-zinc-200 bg-zinc-700/30 px-3 py-2.5 rounded-xl border border-zinc-700/40">
+                          {userData.defaultCity || <span className="text-zinc-600">Not set</span>}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  <AnimatePresence>
+                    {profileMsg.text && (
+                      <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                        className={`flex items-center gap-2 text-xs font-medium mt-4 px-3 py-2.5 rounded-lg border ${profileMsg.type === "success" ? "bg-emerald-900/30 text-emerald-300 border-emerald-800/50" : "bg-red-900/30 text-red-300 border-red-800/50"}`}
+                      >
+                        {profileMsg.type === "success" ? <CheckCircle size={13} /> : <X size={13} />}{profileMsg.text}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  {isEditing && (
+                    <div className="flex justify-end gap-2 mt-5">
+                      <button
+                        onClick={() => { setIsEditing(false); setEditForm({ name: userData.name || "", bio: userData.bio || "", defaultCity: userData.defaultCity || "" }); setProfileMsg({ type: "", text: "" }); }}
+                        disabled={profileSaving}
+                        className="px-4 py-2 text-xs font-semibold text-zinc-300 border border-zinc-600 rounded-xl hover:bg-zinc-700 transition-colors disabled:opacity-40"
+                      >Cancel</button>
+                      <button
+                        onClick={handleSaveProfile}
+                        disabled={profileSaving || !editForm.name.trim()}
+                        className="flex items-center gap-1.5 px-4 py-2 bg-violet-700 hover:bg-violet-600 text-white text-xs font-semibold rounded-xl transition-colors disabled:opacity-40"
+                      >
+                        {profileSaving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
+                        {profileSaving ? "Saving…" : "Save Changes"}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* ── ACTIVITY ── */}
+          {activeTab === "activity" && (
+            <motion.div key="activity" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
+
+              {/* Sub-tabs */}
+              <div className="flex items-center gap-1 bg-zinc-800 border border-zinc-700 rounded-xl p-1 w-fit mb-5">
+                {[
+                  { id: "posts",    label: "My Posts",    icon: <FileText size={13} /> },
+                  { id: "comments", label: "My Comments", icon: <MessageSquare size={13} /> },
+                ].map(t => (
+                  <button key={t.id} onClick={() => setActivityTab(t.id)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                      activityTab === t.id ? "bg-violet-700 text-white shadow-sm" : "text-zinc-400 hover:text-zinc-200"
+                    }`}
+                  >{t.icon}{t.label}</button>
+                ))}
+              </div>
+
+              {activityLoading ? (
+                <div className="flex flex-col items-center justify-center gap-3 py-16">
+                  <Loader2 size={24} className="text-violet-400 animate-spin" />
+                  <p className="text-xs text-zinc-500">Loading activity…</p>
+                </div>
+              ) : (
+                <>
+                  {/* MY POSTS */}
+                  {activityTab === "posts" && (
+                    <div className="space-y-3">
+                      {userPosts.length === 0 ? (
+                        <EmptyState msg="You haven't posted anything yet — share a city story in the Community!" />
+                      ) : (
+                        userPosts.map(post => (
+                          <div key={post._id} className="bg-zinc-800/60 border border-zinc-700/50 rounded-2xl p-4 hover:border-zinc-600/70 transition-colors">
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="flex items-center gap-3 min-w-0">
+                                <Avatar user={userData} size="md" />
+                                <div className="min-w-0">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <span className="text-sm font-semibold text-zinc-100">{userData.name}</span>
+                                    <span className="inline-flex items-center gap-1 bg-orange-900/30 border border-orange-800/40 text-orange-400 text-[10px] font-semibold px-2 py-0.5 rounded-full">
+                                      <MapPin size={9} />{post.city}
+                                    </span>
+                                  </div>
+                                  <p className="text-[10px] text-zinc-500 mt-0.5">{new Date(post.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</p>
+                                </div>
+                              </div>
+                              <button
+                                onClick={() => handleDeletePost(post._id)}
+                                disabled={deletingPostId === post._id}
+                                className="p-2 rounded-lg text-zinc-500 hover:text-red-400 hover:bg-red-900/20 transition-colors shrink-0 disabled:opacity-40"
+                                title="Delete post"
+                              >
+                                {deletingPostId === post._id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                              </button>
+                            </div>
+                            <p className="text-sm text-zinc-300 leading-relaxed mt-3">{post.content}</p>
+                            {post.image && (
+                              <img src={post.image} alt="post" className="mt-3 rounded-xl w-full max-h-52 object-cover border border-zinc-700/50" />
+                            )}
+                            <div className="flex items-center gap-4 mt-3 pt-3 border-t border-zinc-700/40 text-xs text-zinc-500">
+                              <span>👍 {post.likes?.length || 0} likes</span>
+                              <span className="flex items-center gap-1"><MessageSquare size={12} />{post.comments?.length || 0} comments</span>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  )}
+
+                  {/* MY COMMENTS */}
+                  {activityTab === "comments" && (
+                    <div className="space-y-3">
+                      {myComments.length === 0 ? (
+                        <EmptyState msg="No comments found. Comments you leave on posts will appear here." />
+                      ) : (
+                        myComments.map(comment => {
+                          const key = `${comment.postId}-${comment._id}`;
+                          return (
+                            <div key={key} className="bg-zinc-800/60 border border-zinc-700/50 rounded-2xl p-4 hover:border-zinc-600/70 transition-colors">
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="flex items-center gap-3 min-w-0">
+                                  <Avatar user={userData} size="md" />
+                                  <div className="min-w-0">
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                      <span className="text-sm font-semibold text-zinc-100">{userData.name}</span>
+                                      <span className="inline-flex items-center gap-1 bg-orange-900/30 border border-orange-800/40 text-orange-400 text-[10px] font-semibold px-2 py-0.5 rounded-full">
+                                        <MapPin size={9} />{comment.postCity}
+                                      </span>
+                                    </div>
+                                    <p className="text-[10px] text-zinc-600 mt-0.5 truncate">on: {comment.postContent?.slice(0, 60)}…</p>
+                                  </div>
+                                </div>
+                                <button
+                                  onClick={() => handleDeleteComment(comment.postId, comment._id)}
+                                  disabled={deletingCommentKey === key}
+                                  className="p-2 rounded-lg text-zinc-500 hover:text-red-400 hover:bg-red-900/20 transition-colors shrink-0 disabled:opacity-40"
+                                  title="Delete comment"
+                                >
+                                  {deletingCommentKey === key ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                                </button>
+                              </div>
+                              <div className="mt-3 bg-zinc-700/40 rounded-xl px-3 py-2.5 border border-zinc-700/30">
+                                <p className="text-sm text-zinc-300">{comment.text}</p>
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  )}
+                </>
+              )}
+            </motion.div>
+          )}
+
         </AnimatePresence>
       </main>
 

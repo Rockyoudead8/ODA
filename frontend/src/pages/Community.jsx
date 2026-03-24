@@ -142,11 +142,11 @@ function Community() {
   const sidebarInputCls = "w-full px-3 py-2 bg-zinc-700/60 border border-zinc-600/60 rounded-xl text-xs text-zinc-100 placeholder-zinc-500 outline-none focus:border-violet-500 transition";
 
   return (
-    <div className="min-h-screen bg-zinc-900">
+    <div className="max-h-screen bg-zinc-900">
       <div className="flex" style={{ height: "calc(100vh - 64px)" }}>
 
         {/* ══ LEFT SIDEBAR ══ */}
-        <div className="w-64 shrink-0 bg-zinc-900 border-r border-zinc-800 flex flex-col overflow-y-auto" style={{ scrollbarWidth: "thin", scrollbarColor: "#52525b #18181b" }}>
+        <div className="w-72 shrink-0 bg-zinc-900 border-r border-zinc-800 flex flex-col overflow-y-auto" style={{ scrollbarWidth: "thin", scrollbarColor: "#52525b #18181b" }}>
 
           <div className="px-4 pt-5 pb-3 shrink-0">
             <button onClick={() => setShowModal(true)}
@@ -234,7 +234,7 @@ function Community() {
         </div>
 
         {/* Middle + right */}
-        <div className="flex flex-1 gap-3 pl-4 pr-12 py-5 overflow-hidden">
+        <div className="flex flex-1 gap-2 pl-4 pr-16 py-5 overflow-hidden">
 
           {/* ══ MIDDLE PANEL ══ */}
           <div ref={middlePanelRef} className="flex-1 overflow-y-auto" style={{ scrollbarWidth: "thin", scrollbarColor: "#52525b transparent" }}>
@@ -385,7 +385,7 @@ function Community() {
           </div>
 
           {/* ══ RIGHT PANEL ══ */}
-          <div className="w-68 shrink-0 overflow-y-auto space-y-3 py-1" style={{ scrollbarWidth: "none", width: "272px" }}>
+          <div className="w-72 shrink-0 overflow-y-auto space-y-3 py-1" style={{ scrollbarWidth: "none" }}>
             {/* About */}
             <div className="bg-zinc-800/60 border border-zinc-700/50 rounded-2xl overflow-hidden shadow-sm">
               <div className="h-12 bg-gradient-to-r from-violet-800 to-pink-700" />
