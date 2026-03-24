@@ -28,7 +28,7 @@ function AppContent({ user }) {
 
         <Route path='/Check' element={<ProtectedRoute><Check /></ProtectedRoute>} />
         <Route path='/Admin' element={<ProtectedRoute><Admin /></ProtectedRoute>} />
-
+        
         <Route path='/Hero' element={<Hero />} />
 
         <Route path='/Community' element={

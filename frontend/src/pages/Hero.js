@@ -3,6 +3,10 @@ import { Link, useNavigate } from "react-router-dom";
 import Map from "../components/Map.js";
 import { Search, Globe, Star, ArrowRight, MapPin, Plus } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import "@fontsource/great-vibes";
+import "@fontsource/inter/400.css";
+import "@fontsource/inter/500.css";
+import "@fontsource/playfair-display";
 
 function Hero() {
   const [listings, setListings] = useState([]);
@@ -120,23 +124,36 @@ function Hero() {
             </span>
           </motion.div>
 
-          <motion.h1
-            style={{ fontSize: "clamp(2.5rem, 8vw, 4.5rem)", fontWeight: 900, marginBottom: "16px", letterSpacing: "-0.03em", lineHeight: 1.05, background: "linear-gradient(135deg, #e2d9ff 0%, #a78bfa 45%, #ec4899 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2, duration: 0.7 }}
-          >
-            Let's Start The Journey 
-          </motion.h1>
+  <motion.div
+  className="max-w-4xl mx-auto text-center px-6 py-20 pt-2"
+  initial={{ opacity: 0, y: 40 }}
+  animate={{ opacity: 1, y: 0 }}
+  transition={{ duration: 0.9, ease: "easeOut" }}
+>
+  {/* Heading */}
+  <motion.h1
+    className="text-5xl md:text-7xl lg:text-8xl leading-[0.95] tracking-[-0.02em] text-gray-100"
+    style={{ fontFamily: "'Playfair Display', serif" }}
+    initial={{ opacity: 0, y: 30 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ delay: 0.2, duration: 0.7 }}
+  >
+    Let’s start the
+    <br />
+    Journey
+  </motion.h1>
 
-          <motion.p
-            style={{ fontSize: "1.05rem", marginBottom: "40px", maxWidth: "480px", margin: "0 auto 40px", lineHeight: 1.7, color: "#94a3b8" }}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.4, duration: 0.7 }}
-          >
-            Discover history, culture, and stories of the world's most fascinating cities.
-          </motion.p>
+  {/* Subtext */}
+  <motion.p
+  className="mt-5 text-sm md:text-base text-gray-400 leading-[1.6] tracking-[0.02em] max-w-md mx-auto"
+  style={{ fontFamily: "Inter, sans-serif" }}
+  initial={{ opacity: 0 }}
+  animate={{ opacity: 1 }}
+  transition={{ delay: 0.4, duration: 0.7 }}
+>
+  discover history, culture, and stories of the world’s most fascinating cities.
+</motion.p>
+</motion.div>
 
           {/* Search Box with Dropdown */}
           <motion.div
