@@ -4,7 +4,6 @@ import {
   CheckCircle2, XCircle, ChevronDown, ChevronUp, Loader2,
 } from "lucide-react";
 
-/* ── Small reusable section label ── */
 const SectionLabel = ({ icon: Icon, label, colorClass }) => (
   <div className="flex items-center gap-2.5 mb-3.5">
     <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${colorClass.bg}`}>
@@ -25,26 +24,27 @@ function CityInfo({ city }) {
   const [submitting, setSubmitting]             = useState(false);
   const [showExplanations, setShowExplanations] = useState({});
 
-  const generateNewInfo = async () => {
+  const generateNewInfo = async (forceNew = false) => {
     setLoading(true);
     setFetchError(null);
-    setResult(null);
-    setUserAnswers({});
+    if (forceNew) {
+      setResult(null);
+      setUserAnswers({});
+    }
     try {
       const res = await fetch("http://localhost:8000/api/generate_info", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ city, force_new: true }),
+        body: JSON.stringify({ city, force_new: forceNew }),
         credentials: "include",
       });
       const result = await res.json();
       if (!res.ok) throw new Error(result.error || "Server failed.");
 
-      // ✅ SAFE NORMALIZATION (no UI change)
       const safeData = {
         ...result,
         quiz: result.quiz || [],
-        mustDo: result.mustDo || []
+        mustDo: result.mustDo || [],
       };
 
       setData(safeData);
@@ -56,10 +56,16 @@ function CityInfo({ city }) {
     }
   };
 
+  // On mount: load from cache instantly, then auto-refresh from server
   useEffect(() => {
     if (!city) return;
     const cached = localStorage.getItem(`cityInfo_${city}`);
-    if (cached) setData(JSON.parse(cached));
+    if (cached) {
+      try { setData(JSON.parse(cached)); } catch (e) {}
+    }
+    // Always fetch fresh on every page load
+    generateNewInfo(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [city]);
 
   const handleAnswerSelect = (qIndex, optionIndex) =>
@@ -71,10 +77,9 @@ function CityInfo({ city }) {
   const handleSubmitQuiz = async () => {
     if (!data || submitting) return;
     const total = data.quiz.length;
-
     const allAnsweredCheck = data.quiz.every((_, i) => userAnswers[i] !== undefined);
 
-  if (!allAnsweredCheck) {
+    if (!allAnsweredCheck) {
       setFetchError(`Please answer all ${total} questions.`);
       setTimeout(() => setFetchError(null), 3000);
       return;
@@ -85,14 +90,13 @@ function CityInfo({ city }) {
     setFetchError(null);
 
     try {
-
       const payload = {
-    city,
-    userAnswers: data.quiz.map((_, i) =>
-      userAnswers[i] !== undefined ? Number(userAnswers[i]) : null
-    ),
-    correctAnswers: data.quiz.map(q => Number(q.correctAnswerIndex)),
-  };
+        city,
+        userAnswers: data.quiz.map((_, i) =>
+          userAnswers[i] !== undefined ? Number(userAnswers[i]) : null
+        ),
+        correctAnswers: data.quiz.map(q => Number(q.correctAnswerIndex)),
+      };
 
       const res = await fetch("http://localhost:8000/api/submit_quiz", {
         method: "POST",
@@ -117,40 +121,44 @@ function CityInfo({ city }) {
   return (
     <div className="w-full h-full flex flex-col bg-stone-900">
 
-      {/* ── Header ── */}
+      {/* Header */}
       <div className="flex items-center justify-between px-6 py-4 border-b border-stone-800 shrink-0">
         <div>
           <h2 className="text-base font-extrabold text-stone-50 tracking-tight m-0">City Insights</h2>
           <p className="text-xs text-stone-500 mt-0.5 m-0">{city || "Loading…"}</p>
         </div>
 
-        {data && (
-          <button
-            onClick={generateNewInfo}
-            disabled={loading}
-            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl
-                        border text-xs font-semibold transition-all duration-200
-                        ${loading
-                          ? "bg-stone-700 border-stone-700 text-stone-500 cursor-not-allowed"
-                          : "bg-amber-400/10 border-amber-400/40 text-amber-400 hover:bg-amber-400/20"
-                        }`}
-          >
-            {loading
-              ? <><Loader2 size={13} className="animate-spin" /> Generating…</>
-              : <><Sparkles size={13} /> Generate New</>
-            }
-          </button>
-        )}
+        <button
+          onClick={() => generateNewInfo(true)}
+          disabled={loading}
+          className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl border text-xs font-semibold transition-all duration-200 ${
+            loading
+              ? "bg-stone-700 border-stone-700 text-stone-500 cursor-not-allowed"
+              : "bg-amber-400/10 border-amber-400/40 text-amber-400 hover:bg-amber-400/20"
+          }`}
+        >
+          {loading
+            ? <><Loader2 size={13} className="animate-spin" /> Generating…</>
+            : <><Sparkles size={13} /> Generate New</>
+          }
+        </button>
       </div>
 
-      {/* ── Body ── */}
+      {/* Body */}
       <div className="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-5">
 
-        {/* Loading */}
-        {loading && (
+        {/* Loading overlay (when no data yet) */}
+        {loading && !data && (
           <div className="flex flex-col items-center justify-center h-full gap-3 text-stone-500">
             <Loader2 size={28} className="animate-spin text-amber-400" />
-            <span className="text-sm">Generating insights…</span>
+            <span className="text-sm">Generating city insights…</span>
+          </div>
+        )}
+
+        {/* Inline loading bar (when refreshing with existing data) */}
+        {loading && data && (
+          <div className="w-full h-0.5 bg-stone-800 rounded-full overflow-hidden">
+            <div className="h-full bg-amber-400/60 rounded-full animate-pulse" style={{ width: "60%" }} />
           </div>
         )}
 
@@ -158,28 +166,6 @@ function CityInfo({ city }) {
         {fetchError && (
           <div className="px-4 py-3 rounded-xl bg-red-400/10 border border-red-400/20 text-red-400 text-sm">
             {fetchError}
-          </div>
-        )}
-
-        {/* Empty state */}
-        {!loading && !data && !fetchError && (
-          <div className="flex flex-col items-center justify-center h-full gap-4 text-center">
-            <div className="w-14 h-14 rounded-2xl bg-amber-400/10 flex items-center justify-center">
-              <Sparkles size={24} className="text-amber-400" />
-            </div>
-            <div>
-              <p className="text-[15px] font-bold text-stone-300 m-0">No info yet</p>
-              <p className="text-[13px] text-stone-500 mt-1 m-0">Generate history, facts & a quiz</p>
-            </div>
-            <button
-              onClick={generateNewInfo}
-              className="px-5 py-2.5 rounded-xl bg-amber-400 text-[#1c1400]
-                         text-sm font-bold border-none cursor-pointer
-                         shadow-[0_4px_16px_rgba(251,191,36,0.25)]
-                         hover:bg-amber-300 transition-colors"
-            >
-              ✨ Generate Info
-            </button>
           </div>
         )}
 
@@ -195,7 +181,7 @@ function CityInfo({ city }) {
               <p className="text-sm leading-relaxed text-stone-400 m-0">{data.description}</p>
             </section>
 
-            {/* Facts */}
+            {/* Must Do */}
             <section className="bg-[#262220] border border-stone-800 rounded-2xl p-5">
               <SectionLabel
                 icon={Zap} label="Must To Dos"
@@ -223,15 +209,9 @@ function CityInfo({ city }) {
                   {data.quiz.map((q, i) => {
                     const userAnswer = userAnswers[i];
                     const isCorrect  = result && q.correctAnswerIndex === userAnswer;
-                    const isWrong    = result && userAnswer != null && !isCorrect;
-
-                    const cardClass = result
-                      ? isCorrect
-                        ? "border-green-400 bg-green-400/[0.06]"
-                        : "border-red-400 bg-red-400/[0.06]"
-                      : userAnswer != null
-                        ? "border-violet-400 bg-violet-400/[0.06]"
-                        : "border-stone-700 bg-[#1a1715]";
+                    const cardClass  = result
+                      ? isCorrect ? "border-green-400 bg-green-400/[0.06]" : "border-red-400 bg-red-400/[0.06]"
+                      : userAnswer != null ? "border-violet-400 bg-violet-400/[0.06]" : "border-stone-700 bg-[#1a1715]";
 
                     return (
                       <div key={i} className={`border rounded-xl p-4 transition-all duration-200 ${cardClass}`}>
@@ -248,12 +228,10 @@ function CityInfo({ city }) {
                             return (
                               <label
                                 key={j}
-                                className={`flex items-center gap-2.5 px-2 py-1.5 rounded-lg
-                                            transition-colors duration-150 cursor-pointer
-                                            ${result ? "cursor-default" : "cursor-pointer"}
-                                            ${isRightAnswer   ? "bg-green-400/10" : ""}
-                                            ${isWrongSelected ? "bg-red-400/10"   : ""}
-                                         `}
+                                className={`flex items-center gap-2.5 px-2 py-1.5 rounded-lg transition-colors duration-150
+                                  ${result ? "cursor-default" : "cursor-pointer"}
+                                  ${isRightAnswer   ? "bg-green-400/10" : ""}
+                                  ${isWrongSelected ? "bg-red-400/10"   : ""}`}
                               >
                                 <input
                                   type="radio"
@@ -277,13 +255,10 @@ function CityInfo({ city }) {
                           })}
                         </div>
 
-                        {/* Explanation toggle */}
                         {result && (
                           <button
                             onClick={() => toggleExplanation(i)}
-                            className="flex items-center gap-1.5 mt-2.5 text-blue-400
-                                       text-xs font-semibold bg-transparent border-none
-                                       cursor-pointer p-0 hover:text-blue-300 transition-colors"
+                            className="flex items-center gap-1.5 mt-2.5 text-blue-400 text-xs font-semibold bg-transparent border-none cursor-pointer p-0 hover:text-blue-300 transition-colors"
                           >
                             {showExplanations[i] ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
                             {showExplanations[i] ? "Hide" : "Show"} Explanation
@@ -291,9 +266,7 @@ function CityInfo({ city }) {
                         )}
 
                         {showExplanations[i] && result && (
-                          <div className="mt-2.5 px-3.5 py-2.5 rounded-xl
-                                          bg-white/[0.04] border border-stone-800
-                                          text-xs leading-relaxed text-stone-400">
+                          <div className="mt-2.5 px-3.5 py-2.5 rounded-xl bg-white/[0.04] border border-stone-800 text-xs leading-relaxed text-stone-400">
                             <strong className="text-stone-50">Explanation: </strong>{q.explanation}
                           </div>
                         )}
@@ -302,29 +275,22 @@ function CityInfo({ city }) {
                   })}
                 </div>
 
-                {/* Submit button */}
                 <button
                   onClick={handleSubmitQuiz}
                   disabled={submitDisabled}
-                  className={`mt-4 w-full py-2.5 rounded-xl border-none
-                              text-sm font-bold transition-all duration-200
-                              ${submitDisabled
-                                ? "bg-stone-700 text-stone-500 cursor-not-allowed"
-                                : "bg-violet-500 text-white cursor-pointer hover:bg-violet-400 shadow-[0_4px_16px_rgba(167,139,250,0.25)]"
-                              }`}
+                  className={`mt-4 w-full py-2.5 rounded-xl border-none text-sm font-bold transition-all duration-200 ${
+                    submitDisabled
+                      ? "bg-stone-700 text-stone-500 cursor-not-allowed"
+                      : "bg-violet-500 text-white cursor-pointer hover:bg-violet-400 shadow-[0_4px_16px_rgba(167,139,250,0.25)]"
+                  }`}
                 >
                   {submitting ? "Submitting…" : "Submit Quiz"}
                 </button>
 
-                {/* Result banner */}
                 {result?.error ? (
-                  <p className="mt-3 text-center text-sm text-red-400 font-medium">
-                    Error: {result.error}
-                  </p>
+                  <p className="mt-3 text-center text-sm text-red-400 font-medium">Error: {result.error}</p>
                 ) : result?.score !== undefined ? (
-                  <div className="mt-3 px-4 py-3 rounded-xl text-center
-                                  bg-green-400/10 border border-green-400/20
-                                  text-sm font-bold text-green-400">
+                  <div className="mt-3 px-4 py-3 rounded-xl text-center bg-green-400/10 border border-green-400/20 text-sm font-bold text-green-400">
                     ✅ {result.score} / {data.quiz.length} correct
                   </div>
                 ) : null}

@@ -122,6 +122,44 @@ router.get("/get_visits", async (req, res) => {
   }
 });
 
+// update profile (name, bio, defaultCity)
+router.put("/update-profile", passport.authenticate("jwt", { session: false }), async (req, res) => {
+  try {
+    const { name, bio, defaultCity } = req.body;
+    const updates = {};
+    if (name?.trim()) updates.name = name.trim();
+    if (bio !== undefined) updates.bio = bio;
+    if (defaultCity !== undefined) updates.defaultCity = defaultCity;
+    const updatedUser = await user.findByIdAndUpdate(req.user._id, { $set: updates }, { new: true });
+    res.json({ user: updatedUser });
+  } catch (err) {
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+// upload profile photo
+const multer = require("multer");
+const cloudinary = require("../config/cloudinary");
+const multerStorage = multer.memoryStorage();
+const photoUpload = multer({ storage: multerStorage });
+
+router.post("/upload-photo", passport.authenticate("jwt", { session: false }), photoUpload.single("photo"), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: "No file uploaded" });
+    const uploadStream = cloudinary.uploader.upload_stream(
+      { folder: "profile_photos" },
+      async (error, result) => {
+        if (error) return res.status(500).json({ error: "Cloudinary upload failed" });
+        const updatedUser = await user.findByIdAndUpdate(req.user._id, { profilePhoto: result.secure_url }, { new: true });
+        res.json({ photoUrl: result.secure_url, user: updatedUser });
+      }
+    );
+    uploadStream.end(req.file.buffer);
+  } catch (err) {
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
 // route to get user info
 router.get("/get_user", passport.authenticate("jwt", { session: false }), c.handleGetUser);
 

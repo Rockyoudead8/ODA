@@ -1,88 +1,111 @@
-import React, { useEffect, useState } from "react";
-import { Line, Pie, Bar } from "react-chartjs-2";
+import React, { useEffect, useState, useRef, useContext } from "react";
+import { Line, Bar } from "react-chartjs-2";
 import {
-  Chart as ChartJS,
-  LineElement,
-  BarElement,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  ArcElement,
-  Tooltip,
-  Legend,
+  Chart as ChartJS, LineElement, BarElement, CategoryScale,
+  LinearScale, PointElement, ArcElement, Tooltip, Legend,
 } from "chart.js";
 import {
-  MapPin,
-  UploadCloud,
-  Loader2,
-  X,
-  CheckCircle,
-  Award,
-  Target,
-  BookOpen,
-  Compass,
-  TrendingUp,
-  Globe,
-  Star,
-  MessageCircle,
-  FileText,
-  Zap,
+  MapPin, UploadCloud, Loader2, X, CheckCircle, Award, Target,
+  BookOpen, Compass, TrendingUp, Globe, Star, MessageCircle,
+  FileText, Zap, Camera, User, Edit3, Save, Trash2, MessageSquare,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import UserVisitedMap from "../components/UserVisitedMap";
+import { UserContext } from "../UserContext";
 
-ChartJS.register(
-  LineElement, BarElement, CategoryScale, LinearScale,
-  PointElement, ArcElement, Tooltip, Legend
-);
+ChartJS.register(LineElement, BarElement, CategoryScale, LinearScale, PointElement, Tooltip, Legend);
 
 const simulateUploadCity = (cityName) =>
-  new Promise((resolve) =>
-    setTimeout(() => resolve({ success: true, message: `${cityName} submitted!` }), 2000)
-  );
+  new Promise((resolve) => setTimeout(() => resolve({ success: true, message: `${cityName} submitted!` }), 2000));
 
-// ── Badge helper ────────────────────────────────────────────────────────────
 const BADGE_TIERS = [
-  { min: 200, label: "Legend Explorer",  color: "#FF6B6B", bg: "#FFF0F0", emoji: "🏆" },
-  { min: 100, label: "Elite Traveller",  color: "#845EF7", bg: "#F3F0FF", emoji: "💎" },
-  { min:  50, label: "City Adventurer",  color: "#F59E0B", bg: "#FFFBEB", emoji: "⭐" },
-  { min:  20, label: "Local Explorer",   color: "#10B981", bg: "#ECFDF5", emoji: "🌿" },
-  { min:   1, label: "Newcomer",         color: "#3B82F6", bg: "#EFF6FF", emoji: "🌱" },
-  { min:   0, label: "No Points Yet",    color: "#9CA3AF", bg: "#F9FAFB", emoji: "👤" },
+  { min: 200, label: "Legend Explorer",  color: "#f87171", bg: "rgba(248,113,113,0.15)", emoji: "🏆" },
+  { min: 100, label: "Elite Traveller",  color: "#a78bfa", bg: "rgba(167,139,250,0.15)", emoji: "💎" },
+  { min:  50, label: "City Adventurer",  color: "#fbbf24", bg: "rgba(251,191,36,0.15)",  emoji: "⭐" },
+  { min:  20, label: "Local Explorer",   color: "#34d399", bg: "rgba(52,211,153,0.15)",  emoji: "🌿" },
+  { min:   1, label: "Newcomer",         color: "#60a5fa", bg: "rgba(96,165,250,0.15)",  emoji: "🌱" },
+  { min:   0, label: "No Points Yet",    color: "#9ca3af", bg: "rgba(156,163,175,0.15)", emoji: "👤" },
 ];
-const getBadge = (total) =>
-  BADGE_TIERS.find((t) => total >= t.min) || BADGE_TIERS[BADGE_TIERS.length - 1];
+const getBadge = (total) => BADGE_TIERS.find((t) => total >= t.min) || BADGE_TIERS[BADGE_TIERS.length - 1];
 
-// ── Stat Card ─────────────────────────────────────────────────────────────
+// ─── Avatar component ──────────────────────────────────────────────────────
+function Avatar({ user, size = "sm", className = "" }) {
+  const sizeMap = {
+    xs: "w-6 h-6 text-[10px]",
+    sm: "w-8 h-8 text-xs",
+    md: "w-10 h-10 text-sm",
+    lg: "w-14 h-14 text-lg",
+    xl: "w-20 h-20 text-2xl",
+  };
+  const dim = sizeMap[size] || sizeMap.sm;
+  if (user?.profilePhoto) {
+    return (
+      <img
+        src={user.profilePhoto}
+        alt={user.name || "avatar"}
+        className={`${dim} rounded-full object-cover border-2 border-violet-500/40 shrink-0 ${className}`}
+      />
+    );
+  }
+  return (
+    <div className={`${dim} rounded-full bg-gradient-to-br from-violet-700 to-pink-600 text-white font-bold flex items-center justify-center shrink-0 ${className}`}>
+      {user?.name?.[0]?.toUpperCase() || "U"}
+    </div>
+  );
+}
+
 const StatCard = ({ icon, label, value, color, delay = 0 }) => (
   <motion.div
-    className="stat-card"
-    style={{ "--c": color }}
-    initial={{ opacity: 0, y: 16 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ duration: 0.4, delay }}
+    className="flex items-center gap-4 bg-zinc-800/60 border border-zinc-700/60 rounded-xl p-4 hover:bg-zinc-800 transition-colors"
+    initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay }}
   >
-    <div className="stat-icon-wrap">{icon}</div>
+    <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: `${color}20`, color }}>
+      {icon}
+    </div>
     <div>
-      <p className="stat-label">{label}</p>
-      <p className="stat-value">{value}</p>
+      <p className="text-xs text-zinc-400 font-medium">{label}</p>
+      <p className="text-xl font-bold text-zinc-100 mt-0.5">{value}</p>
     </div>
   </motion.div>
 );
 
-// ── Main ──────────────────────────────────────────────────────────────────
+const EmptyState = ({ msg }) => (
+  <div className="flex flex-col items-center justify-center gap-3 py-12 text-zinc-500 text-sm text-center">
+    <Compass size={28} className="text-zinc-600" />
+    <p>{msg || "No data yet — start exploring!"}</p>
+  </div>
+);
+
 const Admin = () => {
-  const [userData, setUserData]                         = useState(null);
-  const [quizResults, setQuizResults]                   = useState([]);
-  const [cityStats, setCityStats]                       = useState({ cities: [], overallTotal: 0 });
+  const { user: contextUser, setUser: setContextUser } = useContext(UserContext);
+  const [userData, setUserData]                               = useState(null);
+  const [quizResults, setQuizResults]                         = useState([]);
+  const [cityStats, setCityStats]                             = useState({ cities: [], overallTotal: 0 });
   const [visitedCitiesWithCoords, setVisitedCitiesWithCoords] = useState([]);
-  const [error, setError]                               = useState("");
-  const [loading, setLoading]                           = useState(true);
-  const [isUploadModalOpen, setIsUploadModalOpen]       = useState(false);
-  const [newCityName, setNewCityName]                   = useState("");
-  const [isUploading, setIsUploading]                   = useState(false);
-  const [uploadMessage, setUploadMessage]               = useState({ type: "", text: "" });
-  const [activeTab, setActiveTab]                       = useState("overview");
+  const [error, setError]                                     = useState("");
+  const [loading, setLoading]                                 = useState(true);
+  const [isUploadModalOpen, setIsUploadModalOpen]             = useState(false);
+  const [newCityName, setNewCityName]                         = useState("");
+  const [isUploading, setIsUploading]                         = useState(false);
+  const [uploadMessage, setUploadMessage]                     = useState({ type: "", text: "" });
+  const [activeTab, setActiveTab]                             = useState("overview");
+
+  // Profile photo
+  const [photoUploading, setPhotoUploading] = useState(false);
+  const fileInputRef = useRef(null);
+
+  // Edit profile state
+  const [isEditing, setIsEditing]         = useState(false);
+  const [editForm, setEditForm]           = useState({ name: "", bio: "", defaultCity: "" });
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileMsg, setProfileMsg]       = useState({ type: "", text: "" });
+
+  // Activity (my posts & comments)
+  const [userPosts, setUserPosts]                   = useState([]);
+  const [activityLoading, setActivityLoading]       = useState(false);
+  const [activityTab, setActivityTab]               = useState("posts");
+  const [deletingPostId, setDeletingPostId]         = useState(null);
+  const [deletingCommentKey, setDeletingCommentKey] = useState(null);
 
   // ── Fetch ────────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -93,21 +116,15 @@ const Admin = () => {
           fetch("http://localhost:8000/api/submit_quiz/get_quiz", { credentials: "include" }),
           fetch("http://localhost:8000/api/city-points/my-stats", { credentials: "include" }),
         ]);
-
-        const userData  = await userRes.json();
-        const quizData  = await quizRes.json();
-        const cityData  = await cityRes.json();
-
+        const userData = await userRes.json();
+        const quizData = await quizRes.json();
+        const cityData = await cityRes.json();
         if (userRes.ok) setUserData(userData.user);
         else setError(userData.error || "User not found");
-
         if (quizRes.ok) setQuizResults(quizData || []);
         if (cityRes.ok) setCityStats(cityData);
-      } catch {
-        setError("Something went wrong.");
-      } finally {
-        setLoading(false);
-      }
+      } catch { setError("Something went wrong."); }
+      finally { setLoading(false); }
     };
     fetchInitialData();
   }, []);
@@ -115,260 +132,287 @@ const Admin = () => {
   useEffect(() => {
     if (!userData?.visitedCities?.length) return;
     fetch("http://localhost:8000/api/geocode-cities", {
-      method: "POST",
-      credentials: "include",
+      method: "POST", credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ cities: userData.visitedCities }),
-    })
-      .then((r) => r.json())
-      .then((data) => setVisitedCitiesWithCoords(data))
-      .catch((err) => console.error("Geocode error:", err));
+    }).then(r => r.json()).then(setVisitedCitiesWithCoords).catch(console.error);
   }, [userData]);
 
+  // Sync edit form when userData loads
+  useEffect(() => {
+    if (userData) {
+      setEditForm({ name: userData.name || "", bio: userData.bio || "", defaultCity: userData.defaultCity || "" });
+    }
+  }, [userData]);
+
+  // Track my comments separately from posts
+  const [myCommentsList, setMyCommentsList] = useState([]);
+
+  // Fetch user posts + comments when activity tab is opened
+  useEffect(() => {
+    if (activeTab !== "activity") return;
+    const fetchActivity = async () => {
+      setActivityLoading(true);
+      try {
+        const [postsRes, commentsRes] = await Promise.all([
+          fetch("http://localhost:8000/api/community/my-posts", { credentials: "include" }),
+          fetch("http://localhost:8000/api/community/my-comments", { credentials: "include" }),
+        ]);
+        if (postsRes.ok) setUserPosts(await postsRes.json());
+        if (commentsRes.ok) setMyCommentsList(await commentsRes.json());
+      } catch (e) { console.error(e); }
+      finally { setActivityLoading(false); }
+    };
+    fetchActivity();
+  }, [activeTab]);
+
+  // ── Handlers ─────────────────────────────────────────────────────────────
   const handleUploadCity = async (e) => {
     e.preventDefault();
     if (!newCityName.trim()) return;
-    setIsUploading(true);
-    setUploadMessage({ type: "", text: "" });
+    setIsUploading(true); setUploadMessage({ type: "", text: "" });
     try {
       const result = await simulateUploadCity(newCityName.trim());
       setUploadMessage({ type: "success", text: result.message });
       setNewCityName("");
       setTimeout(() => setIsUploadModalOpen(false), 2000);
-    } catch {
-      setUploadMessage({ type: "error", text: "Upload failed." });
-    } finally {
-      setIsUploading(false);
-    }
+    } catch { setUploadMessage({ type: "error", text: "Upload failed." }); }
+    finally { setIsUploading(false); }
   };
 
-  const closeModal = () => {
-    setIsUploadModalOpen(false);
-    setNewCityName("");
-    setUploadMessage({ type: "", text: "" });
+  const closeModal = () => { setIsUploadModalOpen(false); setNewCityName(""); setUploadMessage({ type: "", text: "" }); };
+
+  const handlePhotoUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setPhotoUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("photo", file);
+      const res = await fetch("http://localhost:8000/api/auth/upload-photo", {
+        method: "POST", credentials: "include", body: formData,
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setUserData(prev => ({ ...prev, profilePhoto: data.photoUrl }));
+        if (setContextUser) setContextUser(prev => ({ ...prev, profilePhoto: data.photoUrl }));
+      }
+    } catch (err) { console.error("Photo upload failed:", err); }
+    finally { setPhotoUploading(false); }
   };
 
-  // ── Derived quiz data ────────────────────────────────────────────────────
+  const handleSaveProfile = async () => {
+    setProfileSaving(true); setProfileMsg({ type: "", text: "" });
+    try {
+      const res = await fetch("http://localhost:8000/api/auth/update-profile", {
+        method: "PUT", credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(editForm),
+      });
+      if (res.ok) {
+        setUserData(prev => ({ ...prev, ...editForm }));
+        if (setContextUser) setContextUser(prev => ({ ...prev, ...editForm }));
+        setProfileMsg({ type: "success", text: "Profile updated successfully!" });
+        setTimeout(() => { setIsEditing(false); setProfileMsg({ type: "", text: "" }); }, 1500);
+      } else {
+        setProfileMsg({ type: "error", text: "Failed to update profile." });
+      }
+    } catch { setProfileMsg({ type: "error", text: "Something went wrong." }); }
+    finally { setProfileSaving(false); }
+  };
+
+  const handleDeletePost = async (postId) => {
+    if (!window.confirm("Delete this post permanently?")) return;
+    setDeletingPostId(postId);
+    try {
+      await fetch(`http://localhost:8000/api/community/${postId}`, { method: "DELETE", credentials: "include" });
+      setUserPosts(prev => prev.filter(p => p._id?.toString() !== postId.toString()));
+    } catch (e) { console.error(e); }
+    finally { setDeletingPostId(null); }
+  };
+
+  const handleDeleteComment = async (postId, commentId) => {
+    if (!window.confirm("Delete this comment?")) return;
+    const key = `${postId}-${commentId}`;
+    setDeletingCommentKey(key);
+    try {
+      await fetch(`http://localhost:8000/api/community/${postId}/comment/${commentId}`, {
+        method: "DELETE", credentials: "include",
+      });
+      setUserPosts(prev => prev.map(p => {
+        if (p._id?.toString() !== postId.toString()) return p;
+        return { ...p, comments: p.comments.filter(c => c._id?.toString() !== commentId.toString()) };
+      }));
+    } catch (e) { console.error(e); }
+    finally { setDeletingCommentKey(null); }
+  };
+
+  // ── Derived quiz data ──────────────────────────────────────────────────────
   const cityPerformance = quizResults.reduce((acc, { city, score }) => {
     if (!acc[city]) acc[city] = { totalScore: 0, count: 0 };
-    acc[city].totalScore += score;
-    acc[city].count++;
+    acc[city].totalScore += score; acc[city].count++;
     return acc;
   }, {});
-
-  const totalQuizzes   = quizResults.length;
-  const overallAvgScore =
-    totalQuizzes > 0
-      ? (quizResults.reduce((s, q) => s + q.score, 0) / totalQuizzes).toFixed(1)
-      : 0;
-
-  let bestCity = "N/A";
-  if (Object.keys(cityPerformance).length > 0) {
-    bestCity = Object.keys(cityPerformance).reduce((a, b) =>
-      cityPerformance[a].totalScore / cityPerformance[a].count >
-      cityPerformance[b].totalScore / cityPerformance[b].count
-        ? a : b
-    );
-  }
-
-  // ── Chart data ────────────────────────────────────────────────────────────
-  const lineData = {
-    labels: quizResults.map((_, i) => `Quiz ${i + 1}`),
-    datasets: [{
-      label: "Score",
-      data: quizResults.map((q) => q.score),
-      fill: true,
-      backgroundColor: "rgba(59,130,246,0.08)",
-      borderColor: "#3B82F6",
-      pointBackgroundColor: "#3B82F6",
-      pointRadius: 4,
-      tension: 0.4,
-    }],
-  };
-
-  const pieData = {
-    labels: Object.keys(cityPerformance),
-    datasets: [{
-      data: Object.keys(cityPerformance).map((c) =>
-        (cityPerformance[c].totalScore / cityPerformance[c].count).toFixed(2)
-      ),
-      backgroundColor: ["#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#EC4899"],
-      borderColor: "#fff",
-      borderWidth: 3,
-    }],
-  };
-
-  // City points stacked bar chart
-  const cityPointsCities = cityStats.cities.slice(0, 8); // max 8 for readability
-  const barData = {
-    labels: cityPointsCities.map((c) => c.cityName),
-    datasets: [
-      {
-        label: "Quiz",
-        data: cityPointsCities.map((c) => c.quizPoints),
-        backgroundColor: "#3B82F6",
-        borderRadius: 4,
-      },
-      {
-        label: "Comments",
-        data: cityPointsCities.map((c) => c.commentPoints),
-        backgroundColor: "#10B981",
-        borderRadius: 4,
-      },
-      {
-        label: "Posts",
-        data: cityPointsCities.map((c) => c.postPoints),
-        backgroundColor: "#F59E0B",
-        borderRadius: 4,
-      },
-    ],
-  };
+  const totalQuizzes = quizResults.length;
+  const overallAvgScore = totalQuizzes > 0
+    ? (quizResults.reduce((s, q) => s + (q.totalQuestions ? Math.round((q.score / q.totalQuestions) * 100) : q.score), 0) / totalQuizzes).toFixed(1) : 0;
 
   const chartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
+    responsive: true, maintainAspectRatio: false,
     plugins: {
-      legend: { labels: { color: "#6B7280", font: { family: "Plus Jakarta Sans", size: 12 } } },
-      tooltip: { backgroundColor: "#1F2937", titleColor: "#F9FAFB", bodyColor: "#D1D5DB" },
+      legend: { labels: { color: "#9ca3af", font: { size: 12 } } },
+      tooltip: { backgroundColor: "#27272a", titleColor: "#f4f4f5", bodyColor: "#a1a1aa" },
     },
     scales: {
-      x: { ticks: { color: "#9CA3AF" }, grid: { color: "rgba(0,0,0,0.04)" } },
-      y: { ticks: { color: "#9CA3AF" }, grid: { color: "rgba(0,0,0,0.04)" } },
+      x: { ticks: { color: "#6b7280" }, grid: { color: "rgba(255,255,255,0.04)" } },
+      y: { ticks: { color: "#6b7280" }, grid: { color: "rgba(255,255,255,0.04)" } },
     },
   };
 
-  const stackedBarOptions = {
-    ...chartOptions,
-    scales: {
-      ...chartOptions.scales,
-      x: { ...chartOptions.scales.x, stacked: true },
-      y: { ...chartOptions.scales.y, stacked: true },
-    },
+  const lineData = {
+    labels: quizResults.map((q, i) => q.date ? new Date(q.date).toLocaleDateString('en-US', {month:'short', day:'numeric'}) : `Quiz ${i + 1}`),
+    datasets: [{ label: "Score (%)", data: quizResults.map(q => q.totalQuestions ? Math.round((q.score / q.totalQuestions) * 100) : q.score), fill: true, backgroundColor: "rgba(139,92,246,0.08)", borderColor: "#8b5cf6", pointBackgroundColor: "#8b5cf6", pointRadius: 4, tension: 0.4 }],
   };
+  const cityPointsCities = cityStats.cities.slice(0, 8);
+  const barData = {
+    labels: cityPointsCities.map(c => c.cityName),
+    datasets: [
+      { label: "Quiz",     data: cityPointsCities.map(c => c.quizPoints),    backgroundColor: "#8b5cf6", borderRadius: 4 },
+      { label: "Comments", data: cityPointsCities.map(c => c.commentPoints), backgroundColor: "#34d399", borderRadius: 4 },
+      { label: "Posts",    data: cityPointsCities.map(c => c.postPoints),    backgroundColor: "#fbbf24", borderRadius: 4 },
+    ],
+  };
+  const stackedBarOptions = { ...chartOptions, scales: { ...chartOptions.scales, x: { ...chartOptions.scales.x, stacked: true }, y: { ...chartOptions.scales.y, stacked: true } } };
 
-  // ── Overall badge ─────────────────────────────────────────────────────────
   const overallBadge = getBadge(cityStats.overallTotal);
 
-  // ── Loading / Error ───────────────────────────────────────────────────────
-  if (loading) return (
-    <div className="center-screen">
-      <style>{css}</style>
-      <Loader2 size={32} className="spin" style={{ color: "#3B82F6" }} />
-      <p style={{ marginTop: 12, color: "#6B7280", fontSize: 14 }}>Loading your dashboard…</p>
-    </div>
-  );
-
-  if (error) return (
-    <div className="center-screen">
-      <style>{css}</style>
-      <div className="error-box"><X size={18} />{error}</div>
-    </div>
-  );
-
   const tabs = [
-    { id: "overview",  label: "Overview",  icon: <Compass size={15} /> },
-    { id: "analytics", label: "Analytics", icon: <TrendingUp size={15} /> },
-    { id: "points",    label: "Points",    icon: <Zap size={15} /> },
-    { id: "map",       label: "World Map", icon: <Globe size={15} /> },
+    { id: "overview",  label: "Overview",    icon: <Compass size={14} /> },
+    { id: "analytics", label: "Analytics",   icon: <TrendingUp size={14} /> },
+    { id: "map",       label: "World Map",   icon: <Globe size={14} /> },
+    { id: "profile",   label: "Profile",     icon: <User size={14} /> },
+    { id: "activity",  label: "My Activity", icon: <FileText size={14} /> },
   ];
 
+  // ── Loading / Error ────────────────────────────────────────────────────────
+  if (loading) return (
+    <div className="min-h-screen bg-zinc-900 flex flex-col items-center justify-center gap-3">
+      <Loader2 size={28} className="text-violet-400 animate-spin" />
+      <p className="text-sm text-zinc-400">Loading your dashboard…</p>
+    </div>
+  );
+  if (error) return (
+    <div className="min-h-screen bg-zinc-900 flex items-center justify-center">
+      <div className="flex items-center gap-2 bg-red-900/30 text-red-300 border border-red-800/50 rounded-xl px-5 py-3 text-sm font-medium">
+        <X size={16} />{error}
+      </div>
+    </div>
+  );
+
   return (
-    <div className="app">
-      <style>{css}</style>
+    <div className="flex min-h-screen bg-zinc-900 text-zinc-100 font-sans">
 
       {/* ── Sidebar ── */}
-      <div className="sidebar">
-        <div className="brand">
-          <Compass size={20} strokeWidth={2} />
-          <span>Explorer</span>
+      <div className="w-[230px] shrink-0 bg-zinc-900 border-r border-zinc-800 flex flex-col px-3 py-5 sticky top-0 h-screen overflow-y-auto hidden md:flex">
+        {/* Brand */}
+        <div className="flex items-center gap-2 px-2 mb-5">
+          <Compass size={18} className="text-violet-400" />
+          <span className="text-sm font-bold text-zinc-100">Explorer</span>
         </div>
 
-        <div className="profile-block">
-          <div className="avatar">
-            {userData.name?.[0]?.toUpperCase() || "U"}
-          </div>
-          <div className="profile-info">
-            <p className="profile-name">{userData.name}</p>
-            <p className="profile-email">{userData.email}</p>
+        {/* Profile block — centred with medium avatar */}
+        <div className="bg-zinc-800/70 border border-zinc-700/60 rounded-xl p-3 mb-3">
+          <div className="flex flex-col items-center gap-2 text-center">
+            <div className="relative">
+              <Avatar user={userData} size="lg" />
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full bg-violet-600 hover:bg-violet-500 flex items-center justify-center transition-colors shadow-lg"
+                title="Change photo"
+              >
+                {photoUploading ? <Loader2 size={10} className="animate-spin text-white" /> : <Camera size={10} className="text-white" />}
+              </button>
+              <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
+            </div>
+            <div className="min-w-0 w-full">
+              <p className="text-sm font-semibold text-zinc-100 truncate">{userData.name}</p>
+              <p className="text-[10px] text-zinc-500 truncate">{userData.email}</p>
+              {userData.bio && <p className="text-[10px] text-zinc-400 mt-1 line-clamp-2 leading-relaxed">{userData.bio}</p>}
+            </div>
+            <button
+              onClick={() => setActiveTab("profile")}
+              className="text-[10px] text-violet-400 hover:text-violet-300 flex items-center gap-1 transition-colors"
+            >
+              <Edit3 size={9} /> Edit Profile
+            </button>
           </div>
         </div>
 
-        {/* Overall badge */}
-        <div
-          className="badge-block"
-          style={{ background: overallBadge.bg, borderColor: overallBadge.color }}
-        >
-          <span style={{ fontSize: 20 }}>{overallBadge.emoji}</span>
+        {/* Badge */}
+        <div className="rounded-xl px-3 py-2.5 mb-3 border flex items-center gap-2.5" style={{ background: overallBadge.bg, borderColor: `${overallBadge.color}40` }}>
+          <span className="text-lg">{overallBadge.emoji}</span>
           <div>
-            <p className="badge-label" style={{ color: overallBadge.color }}>{overallBadge.label}</p>
-            <p className="badge-pts" style={{ color: overallBadge.color }}>{cityStats.overallTotal} total pts</p>
+            <p className="text-xs font-bold" style={{ color: overallBadge.color }}>{overallBadge.label}</p>
+            <p className="text-[10px] mt-0.5" style={{ color: overallBadge.color }}>{cityStats.overallTotal} pts</p>
           </div>
         </div>
 
-        <div className="divider" />
+        <div className="h-px bg-zinc-800 mb-3" />
 
-        {/* <div className="divider" /> */}
-
-        <button className="suggest-btn" onClick={() => setIsUploadModalOpen(true)}>
-          <UploadCloud size={15} />
-          Suggest a City
+        <button
+          onClick={() => setIsUploadModalOpen(true)}
+          className="flex items-center justify-center gap-2 w-full py-2 bg-violet-700 hover:bg-violet-600 text-white text-xs font-semibold rounded-lg transition-colors mb-3"
+        >
+          <UploadCloud size={13} /> Suggest a City
         </button>
 
-        <div className="divider"/>
+        <div className="h-px bg-zinc-800 mb-3" />
 
-        <nav className="nav">
-          {tabs.map((t) => (
-            <button
-              key={t.id}
-              className={`nav-btn ${activeTab === t.id ? "active" : ""}`}
-              onClick={() => setActiveTab(t.id)}
+        <nav className="flex flex-col gap-1">
+          {tabs.map(t => (
+            <button key={t.id} onClick={() => setActiveTab(t.id)}
+              className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs font-medium transition-colors text-left w-full ${
+                activeTab === t.id ? "bg-violet-900/50 text-violet-300 border border-violet-800/50" : "text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
+              }`}
             >
-              {t.icon}
-              {t.label}
+              {t.icon}{t.label}
             </button>
           ))}
         </nav>
 
-        <div className="divider" />
+        <div className="h-px bg-zinc-800 my-3" />
 
-        <div className="mini-stats">
-          <div className="mini-stat">
-            <span className="mini-stat-label">Cities visited</span>
-            <span className="mini-stat-val">{userData.citiesVisited || 0}</span>
-          </div>
-          <div className="mini-stat">
-            <span className="mini-stat-label">Quizzes taken</span>
-            <span className="mini-stat-val">{totalQuizzes}</span>
-          </div>
-          <div className="mini-stat">
-            <span className="mini-stat-label">Avg quiz score</span>
-            <span className="mini-stat-val">{overallAvgScore}%</span>
-          </div>
-          <div className="mini-stat">
-            <span className="mini-stat-label">Overall points</span>
-            <span className="mini-stat-val" style={{ color: "#4F46E5" }}>{cityStats.overallTotal}</span>
-          </div>
+        <div className="flex flex-col gap-1.5">
+          {[
+            { label: "Cities visited", val: userData.citiesVisited || 0 },
+            { label: "Quizzes taken",  val: totalQuizzes },
+            { label: "Avg score",      val: `${overallAvgScore}%` },
+            { label: "Total points",   val: cityStats.overallTotal, highlight: true },
+          ].map(({ label, val, highlight }) => (
+            <div key={label} className="flex justify-between items-center bg-zinc-800/50 rounded-lg px-2.5 py-2">
+              <span className="text-[11px] text-zinc-400">{label}</span>
+              <span className={`text-xs font-bold ${highlight ? "text-violet-400" : "text-zinc-200"}`}>{val}</span>
+            </div>
+          ))}
         </div>
-
-        <div style={{ flex: 1 }} />
-
       </div>
 
       {/* ── Main ── */}
-      <main className="main">
-        <div className="topbar">
+      <main className="flex-1 min-w-0 px-5 py-6 lg:px-8">
+        {/* Topbar */}
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
           <div>
-            <h1 className="page-title">Hey, {userData.name?.split(" ")[0] || "Explorer"} 👋</h1>
-            <p className="page-sub">Here's what's happening with your travels</p>
+            <h1 className="text-xl font-bold text-zinc-100">Hey, {userData.name?.split(" ")[0] || "Explorer"} 👋</h1>
+            <p className="text-xs text-zinc-500 mt-1">Here's what's happening with your travels</p>
           </div>
-          <div className="tabs">
-            {tabs.map((t) => (
-              <button
-                key={t.id}
-                className={`tab-btn ${activeTab === t.id ? "active" : ""}`}
-                onClick={() => setActiveTab(t.id)}
+          <div className="flex items-center gap-1 bg-zinc-800 border border-zinc-700 rounded-xl p-1 flex-wrap">
+            {tabs.map(t => (
+              <button key={t.id} onClick={() => setActiveTab(t.id)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                  activeTab === t.id ? "bg-violet-700 text-white shadow-sm" : "text-zinc-400 hover:text-zinc-200"
+                }`}
               >
-                {t.label}
+                {t.icon}{t.label}
               </button>
             ))}
           </div>
@@ -378,44 +422,90 @@ const Admin = () => {
 
           {/* ── OVERVIEW ── */}
           {activeTab === "overview" && (
-            <motion.div key="overview"
-              initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }} transition={{ duration: 0.3 }}
-            >
-              <div className="stats-row">
-                <StatCard icon={<BookOpen size={18} />} label="Quizzes Taken"    value={totalQuizzes}                    color="#3B82F6" delay={0.05} />
-                <StatCard icon={<Target size={18} />}   label="Average Score"    value={`${overallAvgScore}%`}           color="#10B981" delay={0.1}  />
-                <StatCard icon={<MapPin size={18} />}   label="Cities Explored"  value={userData.citiesVisited || 0}     color="#F59E0B" delay={0.15} />
-                <StatCard icon={<Zap size={18} />}      label="Total Points"     value={cityStats.overallTotal}          color="#8B5CF6" delay={0.2}  />
+            <motion.div key="overview" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
+
+              {/* Profile banner */}
+              <div className="bg-zinc-800/60 border border-zinc-700/60 rounded-2xl overflow-hidden mb-5">
+                <div className="h-16 bg-gradient-to-r from-violet-900 to-pink-900/60" />
+                <div className="px-6 pb-5">
+                  <div className="flex items-end gap-4 -mt-8 mb-4">
+                    <div className="relative">
+                      <Avatar user={userData} size="xl" className="border-4 border-zinc-800 shadow-xl" />
+                      <button
+                        onClick={() => fileInputRef.current?.click()}
+                        className="absolute bottom-0 right-0 w-6 h-6 rounded-full bg-violet-600 hover:bg-violet-500 flex items-center justify-center transition-colors shadow-lg border-2 border-zinc-800"
+                        title="Change photo"
+                      >
+                        {photoUploading ? <Loader2 size={11} className="animate-spin text-white" /> : <Camera size={11} className="text-white" />}
+                      </button>
+                    </div>
+                    <div className="pb-1 min-w-0 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h2 className="text-lg font-bold text-zinc-100">{userData.name}</h2>
+                        <span className="text-xs px-2 py-0.5 rounded-full border" style={{ background: overallBadge.bg, color: overallBadge.color, borderColor: `${overallBadge.color}40` }}>
+                          {overallBadge.emoji} {overallBadge.label}
+                        </span>
+                      </div>
+                      <p className="text-xs text-zinc-500 mt-0.5">{userData.email}</p>
+                      {userData.bio && <p className="text-xs text-zinc-400 mt-1 line-clamp-1">{userData.bio}</p>}
+                    </div>
+                    <button
+                      onClick={() => setActiveTab("profile")}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-zinc-400 border border-zinc-700 rounded-lg hover:bg-zinc-700 hover:text-zinc-200 transition-colors shrink-0"
+                    >
+                      <Edit3 size={12} /> Edit Profile
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-4 gap-3">
+                    {[
+                      { label: "Cities",   val: userData.citiesVisited || 0 },
+                      { label: "Quizzes",  val: totalQuizzes },
+                      { label: "Avg Score", val: `${overallAvgScore}%` },
+                      { label: "Points",   val: cityStats.overallTotal },
+                    ].map(({ label, val }) => (
+                      <div key={label} className="text-center bg-zinc-700/30 rounded-xl py-2.5">
+                        <p className="text-base font-bold text-zinc-100">{val}</p>
+                        <p className="text-[10px] text-zinc-500 mt-0.5">{label}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
 
-              {/* Overall badge card */}
-              <div className="card" style={{ marginBottom: 18 }}>
-                <div className="card-header">
-                  <Award size={16} />
-                  <h2>Your Explorer Badge</h2>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
+                <StatCard icon={<BookOpen size={17} />} label="Quizzes Taken"   value={totalQuizzes}               color="#8b5cf6" delay={0.05} />
+                <StatCard icon={<Target size={17} />}   label="Average Score"   value={`${overallAvgScore}%`}      color="#34d399" delay={0.1}  />
+                <StatCard icon={<MapPin size={17} />}   label="Cities Explored" value={userData.citiesVisited || 0} color="#fbbf24" delay={0.15} />
+                <StatCard icon={<Zap size={17} />}      label="Total Points"    value={cityStats.overallTotal}     color="#f472b6" delay={0.2}  />
+              </div>
+
+              {/* Badge card */}
+              <div className="bg-zinc-800/60 border border-zinc-700/60 rounded-2xl p-5 mb-4">
+                <div className="flex items-center gap-2 mb-4">
+                  <Award size={15} className="text-zinc-400" />
+                  <h2 className="text-sm font-semibold text-zinc-200">Your Explorer Badge</h2>
                 </div>
-                <div className="badge-showcase" style={{ background: overallBadge.bg, borderColor: overallBadge.color }}>
-                  <span style={{ fontSize: 48 }}>{overallBadge.emoji}</span>
+                <div className="flex items-center gap-5 p-4 rounded-xl border" style={{ background: overallBadge.bg, borderColor: `${overallBadge.color}40` }}>
+                  <span className="text-5xl">{overallBadge.emoji}</span>
                   <div>
-                    <p className="badge-showcase-title" style={{ color: overallBadge.color }}>{overallBadge.label}</p>
-                    <p className="badge-showcase-sub">You've earned <strong>{cityStats.overallTotal}</strong> total points across all cities</p>
-                    <p className="badge-showcase-hint">
+                    <p className="text-lg font-black" style={{ color: overallBadge.color }}>{overallBadge.label}</p>
+                    <p className="text-xs text-zinc-400 mt-1">You've earned <strong className="text-zinc-200">{cityStats.overallTotal}</strong> total points</p>
+                    <p className="text-[11px] text-zinc-500 mt-1">
                       {overallBadge.min < 200
-                        ? `Earn ${BADGE_TIERS[BADGE_TIERS.findIndex(t => t.min === overallBadge.min) - 1]?.min - cityStats.overallTotal} more pts to reach the next tier`
-                        : "You've reached the highest tier! 🎉"}
+                        ? `${BADGE_TIERS[BADGE_TIERS.findIndex(t => t.min === overallBadge.min) - 1]?.min - cityStats.overallTotal} more pts to next tier`
+                        : "Highest tier reached! 🎉"}
                     </p>
                   </div>
                 </div>
               </div>
 
-              <div className="card">
-                <div className="card-header">
-                  <Globe size={16} />
-                  <h2>Your World Map</h2>
-                  <span className="badge-pill">{userData.visitedCities?.length || 0} cities</span>
+              <div className="bg-zinc-800/60 border border-zinc-700/60 rounded-2xl p-5">
+                <div className="flex items-center gap-2 mb-4">
+                  <Globe size={15} className="text-zinc-400" />
+                  <h2 className="text-sm font-semibold text-zinc-200">Your World Map</h2>
+                  <span className="ml-auto text-[10px] bg-zinc-700 border border-zinc-600 rounded-full px-2.5 py-0.5 text-zinc-300">{userData.visitedCities?.length || 0} cities</span>
                 </div>
-                <div className="map-wrap">
+                <div className="rounded-xl overflow-hidden" style={{ minHeight: "320px" }}>
                   <UserVisitedMap visitedCities={visitedCitiesWithCoords} />
                 </div>
               </div>
@@ -424,42 +514,84 @@ const Admin = () => {
 
           {/* ── ANALYTICS ── */}
           {activeTab === "analytics" && (
-            <motion.div key="analytics"
-              initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }} transition={{ duration: 0.3 }}
-            >
-              <div className="two-col">
-                <div className="card">
-                  <div className="card-header"><TrendingUp size={16} /><h2>Score Over Time</h2></div>
+            <motion.div key="analytics" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
+                <StatCard icon={<Star size={17} />}          label="Quiz Points"    value={cityStats.cities.reduce((s,c)=>s+c.quizPoints,0)}    color="#8b5cf6" delay={0.05} />
+                <StatCard icon={<MessageCircle size={17} />} label="Comment Points" value={cityStats.cities.reduce((s,c)=>s+c.commentPoints,0)} color="#34d399" delay={0.1}  />
+                <StatCard icon={<FileText size={17} />}      label="Post Points"    value={cityStats.cities.reduce((s,c)=>s+c.postPoints,0)}    color="#fbbf24" delay={0.15} />
+                <StatCard icon={<Zap size={17} />}           label="Total Points"   value={cityStats.overallTotal}                               color="#f472b6" delay={0.2}  />
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+                <div className="bg-zinc-800/60 border border-zinc-700/60 rounded-2xl p-5">
+                  <div className="flex items-center gap-2 mb-4"><TrendingUp size={14} className="text-zinc-400" /><h2 className="text-sm font-semibold text-zinc-200">Score Over Time</h2></div>
                   {totalQuizzes > 0
-                    ? <div className="chart-box"><Line data={lineData} options={chartOptions} /></div>
-                    : <EmptyState />}
+                    ? <div className="h-52"><Line data={lineData} options={chartOptions} /></div>
+                    : <EmptyState msg="Take a quiz to see your score trend" />}
                 </div>
-                <div className="card">
-                  <div className="card-header"><Award size={16} /><h2>Avg Score by City</h2></div>
-                  {pieData.labels.length > 0
-                    ? <div className="pie-box"><Pie data={pieData} options={{ ...chartOptions, scales: undefined }} /></div>
-                    : <EmptyState />}
+                {/* City points comparison — horizontal bar style */}
+                <div className="bg-zinc-800/60 border border-zinc-700/60 rounded-2xl p-5">
+                  <div className="flex items-center gap-2 mb-4"><Award size={14} className="text-zinc-400" /><h2 className="text-sm font-semibold text-zinc-200">City Points Comparison</h2></div>
+                  {cityStats.cities.length > 0 ? (
+                    <div className="flex flex-col gap-2.5 overflow-y-auto" style={{maxHeight:"208px"}}>
+                      {cityStats.cities.slice(0,8).map((c) => {
+                        const max = Math.max(...cityStats.cities.map(x=>x.total), 1);
+                        const pct = Math.round((c.total / max) * 100);
+                        const badge = getBadge(c.total);
+                        return (
+                          <div key={c.cityName}>
+                            <div className="flex justify-between items-center mb-1">
+                              <span className="text-xs font-semibold text-zinc-300 truncate max-w-[120px]">{c.cityName}</span>
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-[10px]">{badge.emoji}</span>
+                                <span className="text-xs font-bold" style={{color: badge.color}}>{c.total} pts</span>
+                              </div>
+                            </div>
+                            <div className="h-2 bg-zinc-700 rounded-full overflow-hidden">
+                              <div className="h-full rounded-full transition-all duration-500"
+                                style={{width:`${pct}%`, background:`linear-gradient(90deg, #8b5cf6, #ec4899)`}} />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : <EmptyState msg="Earn points in cities to compare" />}
                 </div>
               </div>
 
+              {cityStats.cities.length > 0 && (
+                <div className="bg-zinc-800/60 border border-zinc-700/60 rounded-2xl p-5 mb-4">
+                  <div className="flex items-center gap-2 mb-4"><TrendingUp size={14} className="text-zinc-400" /><h2 className="text-sm font-semibold text-zinc-200">Points Per City</h2></div>
+                  <div className="h-64"><Bar data={barData} options={stackedBarOptions} /></div>
+                  <div className="flex flex-wrap gap-4 pt-4 mt-4 border-t border-zinc-700/50">
+                    {[{ color: "#8b5cf6", label: "Quiz (10 pts/correct)" }, { color: "#34d399", label: "Comment (5 pts each)" }, { color: "#fbbf24", label: "Post (10 pts each)" }].map(({ color, label }) => (
+                      <span key={label} className="flex items-center gap-1.5 text-xs text-zinc-400">
+                        <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: color }} />{label}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {quizResults.length > 0 && (
-                <div className="card">
-                  <div className="card-header"><BookOpen size={16} /><h2>Recent Quiz Results</h2></div>
-                  <div className="table-wrap">
-                    <table className="table">
+                <div className="bg-zinc-800/60 border border-zinc-700/60 rounded-2xl p-5 mb-4">
+                  <div className="flex items-center gap-2 mb-4"><BookOpen size={14} className="text-zinc-400" /><h2 className="text-sm font-semibold text-zinc-200">Recent Quiz Results</h2></div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
                       <thead>
-                        <tr><th>#</th><th>City</th><th>Score</th><th>Grade</th></tr>
+                        <tr className="border-b border-zinc-700/50">
+                          {["#","City","Score","Grade"].map(h => <th key={h} className="text-left py-2 px-3 text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">{h}</th>)}
+                        </tr>
                       </thead>
                       <tbody>
-                        {[...quizResults].reverse().slice(0, 8).map((q, i) => (
-                          <tr key={i}>
-                            <td className="num">{quizResults.length - i}</td>
-                            <td>{q.city || "—"}</td>
-                            <td><span className="score-chip">{q.score}%</span></td>
-                            <td>
-                              <span className={`grade ${q.score >= 80 ? "g-a" : q.score >= 60 ? "g-b" : "g-c"}`}>
-                                {q.score >= 80 ? "Excellent" : q.score >= 60 ? "Good" : "Keep going"}
+                        {[...quizResults].reverse().slice(0,8).map((q,i) => (
+                          <tr key={i} className="border-b border-zinc-800/50 hover:bg-zinc-700/20 transition-colors">
+                            <td className="py-2.5 px-3 text-zinc-500 text-xs">{quizResults.length-i}</td>
+                            <td className="py-2.5 px-3 text-zinc-200">{q.city||"—"}</td>
+                            <td className="py-2.5 px-3"><span className="text-xs font-semibold bg-violet-900/50 text-violet-300 border border-violet-800/50 rounded-md px-2 py-0.5">{q.score}%</span></td>
+                            <td className="py-2.5 px-3">
+                              <span className={`text-xs font-semibold rounded-md px-2 py-0.5 ${q.score>=80?"bg-emerald-900/40 text-emerald-300 border border-emerald-800/40":q.score>=60?"bg-blue-900/40 text-blue-300 border border-blue-800/40":"bg-amber-900/40 text-amber-300 border border-amber-800/40"}`}>
+                                {q.score>=80?"Excellent":q.score>=60?"Good":"Keep going"}
                               </span>
                             </td>
                           </tr>
@@ -469,82 +601,32 @@ const Admin = () => {
                   </div>
                 </div>
               )}
-            </motion.div>
-          )}
 
-          {/* ── POINTS ── */}
-          {activeTab === "points" && (
-            <motion.div key="points"
-              initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }} transition={{ duration: 0.3 }}
-            >
-              {/* Overall summary row */}
-              <div className="stats-row">
-                <StatCard icon={<Star size={18} />}          label="Quiz Points"    value={cityStats.cities.reduce((s,c)=>s+c.quizPoints,0)}    color="#3B82F6" delay={0.05} />
-                <StatCard icon={<MessageCircle size={18} />} label="Comment Points" value={cityStats.cities.reduce((s,c)=>s+c.commentPoints,0)} color="#10B981" delay={0.1}  />
-                <StatCard icon={<FileText size={18} />}      label="Post Points"    value={cityStats.cities.reduce((s,c)=>s+c.postPoints,0)}    color="#F59E0B" delay={0.15} />
-                <StatCard icon={<Zap size={18} />}           label="Total Points"   value={cityStats.overallTotal}                               color="#8B5CF6" delay={0.2}  />
-              </div>
-
-              {/* Stacked bar chart – points per city */}
-              {cityStats.cities.length > 0 ? (
-                <div className="card">
-                  <div className="card-header"><TrendingUp size={16} /><h2>Points Per City</h2></div>
-                  <div className="chart-box chart-tall">
-                    <Bar data={barData} options={stackedBarOptions} />
-                  </div>
-                  <div className="pts-legend">
-                    {[
-                      { color: "#3B82F6", label: "Quiz (10 pts/correct answer)" },
-                      { color: "#10B981", label: "Comment (5 pts each)" },
-                      { color: "#F59E0B", label: "Post on city (10 pts each)" },
-                    ].map(({ color, label }) => (
-                      <span key={label} className="pts-legend-item">
-                        <span className="pts-dot" style={{ background: color }} />
-                        {label}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <div className="card"><EmptyState msg="No points yet — take a quiz, comment or post!" /></div>
-              )}
-
-              {/* Per-city breakdown table */}
               {cityStats.cities.length > 0 && (
-                <div className="card">
-                  <div className="card-header"><Award size={16} /><h2>City Breakdown</h2>
-                    <span className="badge-pill">{cityStats.cities.length} cities</span>
+                <div className="bg-zinc-800/60 border border-zinc-700/60 rounded-2xl p-5">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Award size={14} className="text-zinc-400" /><h2 className="text-sm font-semibold text-zinc-200">City Breakdown</h2>
+                    <span className="ml-auto text-[10px] bg-zinc-700 border border-zinc-600 rounded-full px-2.5 py-0.5 text-zinc-300">{cityStats.cities.length} cities</span>
                   </div>
-                  <div className="table-wrap">
-                    <table className="table">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
                       <thead>
-                        <tr>
-                          <th>#</th>
-                          <th>City</th>
-                          <th>Badge</th>
-                          <th>Quiz</th>
-                          <th>Comments</th>
-                          <th>Posts</th>
-                          <th>Total</th>
+                        <tr className="border-b border-zinc-700/50">
+                          {["#","City","Badge","Quiz","Comments","Posts","Total"].map(h => <th key={h} className="text-left py-2 px-3 text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">{h}</th>)}
                         </tr>
                       </thead>
                       <tbody>
-                        {cityStats.cities.map((c, i) => {
+                        {cityStats.cities.map((c,i) => {
                           const badge = getBadge(c.total);
                           return (
-                            <tr key={c.cityName}>
-                              <td className="num">{i + 1}</td>
-                              <td><strong>{c.cityName}</strong></td>
-                              <td>
-                                <span className="badge-inline" style={{ background: badge.bg, color: badge.color }}>
-                                  {badge.emoji} {badge.label}
-                                </span>
-                              </td>
-                              <td><span className="score-chip blue">{c.quizPoints}</span></td>
-                              <td><span className="score-chip green">{c.commentPoints}</span></td>
-                              <td><span className="score-chip amber">{c.postPoints}</span></td>
-                              <td><strong className="total-pts">{c.total}</strong></td>
+                            <tr key={c.cityName} className="border-b border-zinc-800/50 hover:bg-zinc-700/20 transition-colors">
+                              <td className="py-2.5 px-3 text-zinc-500 text-xs">{i+1}</td>
+                              <td className="py-2.5 px-3 font-semibold text-zinc-200">{c.cityName}</td>
+                              <td className="py-2.5 px-3"><span className="text-xs font-semibold rounded-md px-2 py-0.5 border" style={{ background: badge.bg, color: badge.color, borderColor:`${badge.color}40` }}>{badge.emoji} {badge.label}</span></td>
+                              <td className="py-2.5 px-3"><span className="text-xs font-semibold bg-violet-900/40 text-violet-300 border border-violet-800/40 rounded-md px-2 py-0.5">{c.quizPoints}</span></td>
+                              <td className="py-2.5 px-3"><span className="text-xs font-semibold bg-emerald-900/40 text-emerald-300 border border-emerald-800/40 rounded-md px-2 py-0.5">{c.commentPoints}</span></td>
+                              <td className="py-2.5 px-3"><span className="text-xs font-semibold bg-amber-900/40 text-amber-300 border border-amber-800/40 rounded-md px-2 py-0.5">{c.postPoints}</span></td>
+                              <td className="py-2.5 px-3 font-bold text-violet-400">{c.total}</td>
                             </tr>
                           );
                         })}
@@ -558,79 +640,308 @@ const Admin = () => {
 
           {/* ── MAP ── */}
           {activeTab === "map" && (
-            <motion.div key="map"
-              initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }} transition={{ duration: 0.3 }}
-            >
-              <div className="card">
-                <div className="card-header">
-                  <Globe size={16} /><h2>Explorer's Map</h2>
-                  <span className="badge-pill">{userData.visitedCities?.length || 0} destinations</span>
+            <motion.div key="map" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
+              <div className="bg-zinc-800/60 border border-zinc-700/60 rounded-2xl p-5">
+                <div className="flex items-center gap-2 mb-4">
+                  <Globe size={15} className="text-zinc-400" /><h2 className="text-sm font-semibold text-zinc-200">Explorer's Map</h2>
+                  <span className="ml-auto text-[10px] bg-zinc-700 border border-zinc-600 rounded-full px-2.5 py-0.5 text-zinc-300">{userData.visitedCities?.length || 0} destinations</span>
                 </div>
                 {userData.visitedCities?.length > 0 && (
-                  <div className="city-chips">
-                    {userData.visitedCities.map((c) => (
-                      <span key={c} className="city-chip"><MapPin size={10} />{c}</span>
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    {userData.visitedCities.map(c => (
+                      <span key={c} className="inline-flex items-center gap-1 bg-zinc-700/60 border border-zinc-600/60 text-zinc-300 text-[11px] font-medium rounded-full px-2.5 py-1">
+                        <MapPin size={9} className="text-violet-400" />{c}
+                      </span>
                     ))}
                   </div>
                 )}
-                <div className="map-wrap map-lg">
+                <div className="rounded-xl overflow-hidden" style={{ minHeight: "460px" }}>
                   <UserVisitedMap visitedCities={visitedCitiesWithCoords} />
                 </div>
               </div>
             </motion.div>
           )}
 
+          {/* ── PROFILE ── */}
+          {activeTab === "profile" && (
+            <motion.div key="profile" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
+              <div className="max-w-2xl">
+
+                {/* Photo section */}
+                <div className="bg-zinc-800/60 border border-zinc-700/60 rounded-2xl overflow-hidden mb-4">
+                  <div className="h-20 bg-gradient-to-r from-violet-900 to-pink-900/60" />
+                  <div className="px-6 pb-6">
+                    <div className="flex items-end gap-5 -mt-10 mb-5">
+                      <div className="relative">
+                        <Avatar user={userData} size="xl" className="border-4 border-zinc-800 shadow-2xl" />
+                        <button
+                          onClick={() => fileInputRef.current?.click()}
+                          className="absolute bottom-0 right-0 w-7 h-7 rounded-full bg-violet-600 hover:bg-violet-500 flex items-center justify-center transition-colors shadow-lg border-2 border-zinc-800"
+                          title="Change photo"
+                        >
+                          {photoUploading ? <Loader2 size={12} className="animate-spin text-white" /> : <Camera size={12} className="text-white" />}
+                        </button>
+                        <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
+                      </div>
+                      <div className="pb-1">
+                        <h2 className="text-xl font-bold text-zinc-100">{userData.name}</h2>
+                        <p className="text-xs text-zinc-500">{userData.email}</p>
+                        <p className="text-xs text-zinc-500 mt-0.5">Member since {new Date(userData.createdAt).toLocaleDateString("en-US", { year: "numeric", month: "long" })}</p>
+                      </div>
+                    </div>
+                    <p className="text-xs text-zinc-500">Click the camera icon to upload a new profile photo</p>
+                  </div>
+                </div>
+
+                {/* Edit form */}
+                <div className="bg-zinc-800/60 border border-zinc-700/60 rounded-2xl p-6">
+                  <div className="flex items-center justify-between mb-5">
+                    <div className="flex items-center gap-2">
+                      <Edit3 size={15} className="text-zinc-400" />
+                      <h2 className="text-sm font-semibold text-zinc-200">Edit Profile</h2>
+                    </div>
+                    {!isEditing && (
+                      <button
+                        onClick={() => { setIsEditing(true); setProfileMsg({ type: "", text: "" }); }}
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-violet-400 border border-violet-800/60 rounded-lg hover:bg-violet-900/30 transition-colors"
+                      >
+                        <Edit3 size={12} /> Edit
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-zinc-400 mb-1.5">Display Name</label>
+                      {isEditing ? (
+                        <input value={editForm.name} onChange={e => setEditForm(prev => ({ ...prev, name: e.target.value }))}
+                          className="w-full px-3 py-2.5 bg-zinc-700/60 border border-zinc-600 rounded-xl text-sm text-zinc-100 placeholder-zinc-500 outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500/30 transition"
+                          placeholder="Your name" />
+                      ) : (
+                        <p className="text-sm text-zinc-200 bg-zinc-700/30 px-3 py-2.5 rounded-xl border border-zinc-700/40">{userData.name || "—"}</p>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-zinc-400 mb-1.5">Email <span className="text-zinc-600 font-normal">(cannot be changed)</span></label>
+                      <p className="text-sm text-zinc-400 bg-zinc-800/40 px-3 py-2.5 rounded-xl border border-zinc-700/30">{userData.email}</p>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-zinc-400 mb-1.5">Bio</label>
+                      {isEditing ? (
+                        <textarea value={editForm.bio} onChange={e => setEditForm(prev => ({ ...prev, bio: e.target.value }))}
+                          rows={3} className="w-full px-3 py-2.5 bg-zinc-700/60 border border-zinc-600 rounded-xl text-sm text-zinc-100 placeholder-zinc-500 outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500/30 transition resize-none"
+                          placeholder="Tell us a bit about yourself…" />
+                      ) : (
+                        <p className="text-sm text-zinc-300 bg-zinc-700/30 px-3 py-2.5 rounded-xl border border-zinc-700/40 min-h-[56px]">
+                          {userData.bio || <span className="text-zinc-600">No bio added yet</span>}
+                        </p>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-zinc-400 mb-1.5">Home City</label>
+                      {isEditing ? (
+                        <input value={editForm.defaultCity} onChange={e => setEditForm(prev => ({ ...prev, defaultCity: e.target.value }))}
+                          className="w-full px-3 py-2.5 bg-zinc-700/60 border border-zinc-600 rounded-xl text-sm text-zinc-100 placeholder-zinc-500 outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500/30 transition"
+                          placeholder="e.g. Mumbai, India" />
+                      ) : (
+                        <p className="text-sm text-zinc-200 bg-zinc-700/30 px-3 py-2.5 rounded-xl border border-zinc-700/40">
+                          {userData.defaultCity || <span className="text-zinc-600">Not set</span>}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  <AnimatePresence>
+                    {profileMsg.text && (
+                      <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                        className={`flex items-center gap-2 text-xs font-medium mt-4 px-3 py-2.5 rounded-lg border ${profileMsg.type === "success" ? "bg-emerald-900/30 text-emerald-300 border-emerald-800/50" : "bg-red-900/30 text-red-300 border-red-800/50"}`}
+                      >
+                        {profileMsg.type === "success" ? <CheckCircle size={13} /> : <X size={13} />}{profileMsg.text}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  {isEditing && (
+                    <div className="flex justify-end gap-2 mt-5">
+                      <button
+                        onClick={() => { setIsEditing(false); setEditForm({ name: userData.name || "", bio: userData.bio || "", defaultCity: userData.defaultCity || "" }); setProfileMsg({ type: "", text: "" }); }}
+                        disabled={profileSaving}
+                        className="px-4 py-2 text-xs font-semibold text-zinc-300 border border-zinc-600 rounded-xl hover:bg-zinc-700 transition-colors disabled:opacity-40"
+                      >Cancel</button>
+                      <button
+                        onClick={handleSaveProfile}
+                        disabled={profileSaving || !editForm.name.trim()}
+                        className="flex items-center gap-1.5 px-4 py-2 bg-violet-700 hover:bg-violet-600 text-white text-xs font-semibold rounded-xl transition-colors disabled:opacity-40"
+                      >
+                        {profileSaving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
+                        {profileSaving ? "Saving…" : "Save Changes"}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* ── ACTIVITY ── */}
+          {activeTab === "activity" && (
+            <motion.div key="activity" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
+
+              {/* Sub-tabs */}
+              <div className="flex items-center gap-1 bg-zinc-800 border border-zinc-700 rounded-xl p-1 w-fit mb-5">
+                {[
+                  { id: "posts",    label: "My Posts",    icon: <FileText size={13} /> },
+                  { id: "comments", label: "My Comments", icon: <MessageSquare size={13} /> },
+                ].map(t => (
+                  <button key={t.id} onClick={() => setActivityTab(t.id)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                      activityTab === t.id ? "bg-violet-700 text-white shadow-sm" : "text-zinc-400 hover:text-zinc-200"
+                    }`}
+                  >{t.icon}{t.label}</button>
+                ))}
+              </div>
+
+              {activityLoading ? (
+                <div className="flex flex-col items-center justify-center gap-3 py-16">
+                  <Loader2 size={24} className="text-violet-400 animate-spin" />
+                  <p className="text-xs text-zinc-500">Loading activity…</p>
+                </div>
+              ) : (
+                <>
+                  {/* MY POSTS */}
+                  {activityTab === "posts" && (
+                    <div className="space-y-3">
+                      {userPosts.length === 0 ? (
+                        <EmptyState msg="You haven't posted anything yet — share a city story in the Community!" />
+                      ) : (
+                        userPosts.map(post => (
+                          <div key={post._id} className="bg-zinc-800/60 border border-zinc-700/50 rounded-2xl p-4 hover:border-zinc-600/70 transition-colors">
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="flex items-center gap-3 min-w-0">
+                                <Avatar user={userData} size="md" />
+                                <div className="min-w-0">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <span className="text-sm font-semibold text-zinc-100">{userData.name}</span>
+                                    <span className="inline-flex items-center gap-1 bg-orange-900/30 border border-orange-800/40 text-orange-400 text-[10px] font-semibold px-2 py-0.5 rounded-full">
+                                      <MapPin size={9} />{post.city}
+                                    </span>
+                                  </div>
+                                  <p className="text-[10px] text-zinc-500 mt-0.5">{new Date(post.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</p>
+                                </div>
+                              </div>
+                              <button
+                                onClick={() => handleDeletePost(post._id)}
+                                disabled={deletingPostId === post._id}
+                                className="p-2 rounded-lg text-zinc-500 hover:text-red-400 hover:bg-red-900/20 transition-colors shrink-0 disabled:opacity-40"
+                                title="Delete post"
+                              >
+                                {deletingPostId === post._id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                              </button>
+                            </div>
+                            <p className="text-sm text-zinc-300 leading-relaxed mt-3">{post.content}</p>
+                            {post.image && (
+                              <img src={post.image} alt="post" className="mt-3 rounded-xl w-full max-h-52 object-cover border border-zinc-700/50" />
+                            )}
+                            <div className="flex items-center gap-4 mt-3 pt-3 border-t border-zinc-700/40 text-xs text-zinc-500">
+                              <span>👍 {post.likes?.length || 0} likes</span>
+                              <span className="flex items-center gap-1"><MessageSquare size={12} />{post.comments?.length || 0} comments</span>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  )}
+
+                  {/* MY COMMENTS */}
+                  {activityTab === "comments" && (
+                    <div className="space-y-3">
+                      {myCommentsList.length === 0 ? (
+                        <EmptyState msg="No comments found. Comments you leave on posts will appear here." />
+                      ) : (
+                        myCommentsList.map(comment => {
+                          const key = `${comment.postId}-${comment._id}`;
+                          return (
+                            <div key={String(key)} className="bg-zinc-800/60 border border-zinc-700/50 rounded-2xl p-4 hover:border-zinc-600/70 transition-colors">
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="flex items-center gap-3 min-w-0">
+                                  <Avatar user={userData} size="md" />
+                                  <div className="min-w-0">
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                      <span className="text-sm font-semibold text-zinc-100">{userData.name}</span>
+                                      <span className="inline-flex items-center gap-1 bg-orange-900/30 border border-orange-800/40 text-orange-400 text-[10px] font-semibold px-2 py-0.5 rounded-full">
+                                        <MapPin size={9} />{comment.postCity}
+                                      </span>
+                                    </div>
+                                    <p className="text-[10px] text-zinc-600 mt-0.5 truncate">on: {comment.postContent?.slice(0, 60)}…</p>
+                                  </div>
+                                </div>
+                                <button
+                                  onClick={() => handleDeleteComment(comment.postId, comment._id)}
+                                  disabled={deletingCommentKey === key}
+                                  className="p-2 rounded-lg text-zinc-500 hover:text-red-400 hover:bg-red-900/20 transition-colors shrink-0 disabled:opacity-40"
+                                  title="Delete comment"
+                                >
+                                  {deletingCommentKey === key ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                                </button>
+                              </div>
+                              <div className="mt-3 bg-zinc-700/40 rounded-xl px-3 py-2.5 border border-zinc-700/30">
+                                <p className="text-sm text-zinc-300">{comment.text}</p>
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  )}
+                </>
+              )}
+            </motion.div>
+          )}
+
         </AnimatePresence>
       </main>
 
-      {/* ── Modal ── */}
+      {/* ── Upload Modal ── */}
       <AnimatePresence>
         {isUploadModalOpen && (
-          <motion.div className="modal-bg"
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-          >
-            <motion.div className="modal"
-              initial={{ scale: 0.95, opacity: 0, y: 10 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              transition={{ type: "spring", stiffness: 280, damping: 24 }}
+          <motion.div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 px-4"
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <motion.div className="bg-zinc-800 border border-zinc-700 rounded-2xl p-6 w-full max-w-md shadow-2xl"
+              initial={{ scale: 0.95, opacity: 0, y: 10 }} animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0 }} transition={{ type: "spring", stiffness: 280, damping: 24 }}
             >
-              <div className="modal-head">
-                <h3>Suggest a City</h3>
-                <button className="icon-btn" onClick={closeModal} disabled={isUploading}><X size={17} /></button>
+              <div className="flex justify-between items-center mb-2">
+                <h3 className="text-base font-bold text-zinc-100">Suggest a City</h3>
+                <button onClick={closeModal} disabled={isUploading} className="p-1.5 rounded-lg bg-zinc-700 hover:bg-zinc-600 text-zinc-400 transition-colors">
+                  <X size={16} />
+                </button>
               </div>
-              <p className="modal-desc">
-                Can't find a city? Submit it and our team will review it for addition.
-              </p>
+              <p className="text-xs text-zinc-400 leading-relaxed mb-4">Can't find a city? Submit it and our team will review it for addition.</p>
               <form onSubmit={handleUploadCity}>
-                <label className="field-label">City name</label>
-                <input
-                  type="text"
-                  className="field-input"
-                  placeholder="e.g. Kyoto, Japan"
-                  value={newCityName}
-                  onChange={(e) => { setNewCityName(e.target.value); setUploadMessage({ type: "", text: "" }); }}
-                  required
-                  disabled={isUploading || uploadMessage.type === "success"}
+                <label className="block text-xs font-semibold text-zinc-300 mb-1.5">City name</label>
+                <input type="text" placeholder="e.g. Kyoto, Japan" value={newCityName}
+                  onChange={e => { setNewCityName(e.target.value); setUploadMessage({ type: "", text: "" }); }}
+                  required disabled={isUploading || uploadMessage.type === "success"}
+                  className="w-full px-3 py-2.5 bg-zinc-700/80 border border-zinc-600 rounded-xl text-sm text-zinc-100 placeholder-zinc-500 outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500/30 transition disabled:opacity-50"
                 />
                 <AnimatePresence>
                   {uploadMessage.text && (
-                    <motion.div
-                      className={`feedback ${uploadMessage.type}`}
-                      initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                    <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                      className={`flex items-center gap-2 text-xs font-medium mt-3 px-3 py-2.5 rounded-lg border ${uploadMessage.type==="success"?"bg-emerald-900/30 text-emerald-300 border-emerald-800/50":"bg-red-900/30 text-red-300 border-red-800/50"}`}
                     >
-                      {uploadMessage.type === "success" ? <CheckCircle size={14} /> : <X size={14} />}
-                      {uploadMessage.text}
+                      {uploadMessage.type==="success"?<CheckCircle size={13}/>:<X size={13}/>}{uploadMessage.text}
                     </motion.div>
                   )}
                 </AnimatePresence>
-                <div className="modal-actions">
-                  <button type="button" className="btn-outline" onClick={closeModal} disabled={isUploading}>Cancel</button>
-                  <button type="submit" className="btn-primary"
-                    disabled={isUploading || !newCityName.trim() || uploadMessage.type === "success"}
-                  >
-                    {isUploading && <Loader2 size={14} className="spin" />}
+                <div className="flex justify-end gap-2 mt-4">
+                  <button type="button" onClick={closeModal} disabled={isUploading}
+                    className="px-4 py-2 text-sm font-semibold text-zinc-300 border border-zinc-600 rounded-xl hover:bg-zinc-700 transition-colors disabled:opacity-40">Cancel</button>
+                  <button type="submit" disabled={isUploading || !newCityName.trim() || uploadMessage.type==="success"}
+                    className="flex items-center gap-1.5 px-4 py-2 bg-violet-700 hover:bg-violet-600 text-white text-sm font-semibold rounded-xl transition-colors disabled:opacity-40">
+                    {isUploading && <Loader2 size={13} className="animate-spin" />}
                     {isUploading ? "Submitting…" : "Submit"}
                   </button>
                 </div>
@@ -643,321 +954,4 @@ const Admin = () => {
   );
 };
 
-const EmptyState = ({ msg }) => (
-  <div className="empty">
-    <Compass size={28} style={{ color: "#D1D5DB" }} />
-    <p>{msg || "No data yet — start exploring!"}</p>
-  </div>
-);
-
-// ── CSS ───────────────────────────────────────────────────────────────────
-const css = `
-  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
-
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-  .app {
-    display: flex;
-    min-height: 100vh;
-    background: #F3F4F6;
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    font-size: 14px;
-    color: #111827;
-  }
-
-  /* Sidebar */
-  .sidebar {
-    width: 230px;
-    min-height: 100vh;
-    background: #fff;
-    border-right: 1px solid #E5E7EB;
-    display: flex;
-    flex-direction: column;
-    padding: 24px 16px;
-    flex-shrink: 0;
-    position: sticky;
-    top: 0;
-    overflow-y: auto;
-  }
-  .brand {
-    display: flex; align-items: center; gap: 8px;
-    font-size: 15px; font-weight: 700; color: #1D4ED8;
-    margin-bottom: 24px; padding-left: 4px;
-  }
-  .profile-block {
-    display: flex; align-items: center; gap: 10px;
-    padding: 12px; background: #F9FAFB;
-    border-radius: 10px; border: 1px solid #E5E7EB;
-    margin-bottom: 10px;
-  }
-  .avatar {
-    width: 36px; height: 36px; border-radius: 50%;
-    background: #DBEAFE; color: #1D4ED8;
-    font-weight: 700; font-size: 15px;
-    display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0;
-  }
-  .profile-name { font-weight: 600; font-size: 13px; color: #111827; }
-  .profile-email { font-size: 11px; color: #6B7280; margin-top: 1px; word-break: break-all; }
-
-  /* Badge block in sidebar */
-  .badge-block {
-    display: flex; align-items: center; gap: 10px;
-    padding: 10px 12px; border-radius: 10px;
-    border: 1.5px solid; margin-bottom: 12px;
-  }
-  .badge-label { font-size: 12px; font-weight: 700; }
-  .badge-pts   { font-size: 11px; font-weight: 500; margin-top: 1px; }
-
-  .divider { height: 1px; background: #F3F4F6; margin: 12px 0; }
-  .mini-stats { display: flex; flex-direction: column; gap: 6px; margin-bottom: 4px; }
-  .mini-stat {
-    display: flex; justify-content: space-between; align-items: center;
-    padding: 8px 10px; border-radius: 8px; background: #F9FAFB;
-  }
-  .mini-stat-label { font-size: 12px; color: #6B7280; }
-  .mini-stat-val { font-size: 13px; font-weight: 600; color: #111827; }
-  .nav { display: flex; flex-direction: column; gap: 2px; }
-  .nav-btn {
-    display: flex; align-items: center; gap: 8px;
-    padding: 9px 10px; border-radius: 8px; border: none;
-    background: none; color: #6B7280;
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    font-size: 13.5px; font-weight: 500;
-    cursor: pointer; text-align: left;
-    transition: background 0.15s, color 0.15s; width: 100%;
-  }
-  .nav-btn:hover { background: #F3F4F6; color: #111827; }
-  .nav-btn.active { background: #EFF6FF; color: #1D4ED8; font-weight: 600; }
-  .suggest-btn {
-    display: flex; align-items: center; justify-content: center;
-    gap: 7px; padding: 10px; background: #1D4ED8; color: #fff;
-    border: none; border-radius: 8px;
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    font-size: 13px; font-weight: 600; cursor: pointer;
-    width: 100%; transition: background 0.15s; margin-top: 8px;
-  }
-  .suggest-btn:hover { background: #1E40AF; }
-
-  /* Main */
-  .main { flex: 1; padding: 28px 28px 48px; min-width: 0; }
-  .topbar {
-    display: flex; align-items: center;
-    justify-content: space-between; margin-bottom: 24px;
-    flex-wrap: wrap; gap: 12px;
-  }
-  .page-title { font-size: 22px; font-weight: 700; color: #111827; }
-  .page-sub { font-size: 13px; color: #6B7280; margin-top: 2px; }
-  .tabs {
-    display: flex; gap: 4px; background: #fff;
-    border: 1px solid #E5E7EB; border-radius: 10px; padding: 4px;
-  }
-  .tab-btn {
-    padding: 7px 16px; border-radius: 7px; border: none;
-    background: none; font-family: 'Plus Jakarta Sans', sans-serif;
-    font-size: 13px; font-weight: 500; color: #6B7280;
-    cursor: pointer; transition: all 0.15s;
-  }
-  .tab-btn:hover { color: #111827; background: #F9FAFB; }
-  .tab-btn.active { background: #1D4ED8; color: #fff; font-weight: 600; }
-
-  /* Stat cards */
-  .stats-row {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(175px, 1fr));
-    gap: 14px; margin-bottom: 20px;
-  }
-  .stat-card {
-    background: #fff; border: 1px solid #E5E7EB; border-radius: 12px;
-    padding: 18px 16px; display: flex; align-items: center; gap: 14px;
-    transition: box-shadow 0.15s;
-  }
-  .stat-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.07); }
-  .stat-icon-wrap {
-    width: 40px; height: 40px; border-radius: 10px;
-    background: color-mix(in srgb, var(--c) 12%, transparent);
-    color: var(--c);
-    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-  }
-  .stat-label { font-size: 12px; color: #6B7280; font-weight: 500; }
-  .stat-value { font-size: 20px; font-weight: 700; color: #111827; margin-top: 2px; }
-
-  /* Badge showcase */
-  .badge-showcase {
-    display: flex; align-items: center; gap: 20px;
-    padding: 20px 24px; border-radius: 12px; border: 2px solid;
-    background: #F9FAFB;
-  }
-  .badge-showcase-title { font-size: 20px; font-weight: 800; }
-  .badge-showcase-sub   { font-size: 13px; color: #6B7280; margin-top: 4px; }
-  .badge-showcase-hint  { font-size: 11.5px; color: #9CA3AF; margin-top: 4px; }
-
-  /* Card */
-  .card {
-    background: #fff; border: 1px solid #E5E7EB;
-    border-radius: 14px; padding: 22px; margin-bottom: 18px;
-  }
-  .card-header {
-    display: flex; align-items: center; gap: 8px;
-    margin-bottom: 18px; color: #374151;
-  }
-  .card-header h2 { font-size: 15px; font-weight: 600; color: #111827; }
-  .badge-pill {
-    margin-left: auto; background: #F3F4F6;
-    border: 1px solid #E5E7EB; border-radius: 20px;
-    padding: 2px 10px; font-size: 11.5px; color: #6B7280; font-weight: 500;
-  }
-
-  /* Map */
-  .map-wrap { border-radius: 10px; overflow: hidden; min-height: 320px; }
-  .map-lg { min-height: 460px; }
-
-  /* City chips */
-  .city-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
-  .city-chip {
-    display: inline-flex; align-items: center; gap: 4px;
-    background: #F9FAFB; border: 1px solid #E5E7EB;
-    border-radius: 20px; padding: 4px 10px;
-    font-size: 12px; color: #374151;
-  }
-  .city-chip svg { color: #6B7280; }
-
-  /* Charts */
-  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
-  @media (max-width: 900px) { .two-col { grid-template-columns: 1fr; } }
-  .chart-box { height: 240px; }
-  .chart-tall { height: 300px; }
-  .pie-box { height: 240px; display: flex; align-items: center; justify-content: center; }
-  .pie-box canvas { max-height: 240px !important; }
-
-  /* Points legend */
-  .pts-legend {
-    display: flex; flex-wrap: wrap; gap: 16px;
-    padding-top: 14px; border-top: 1px solid #F3F4F6; margin-top: 14px;
-  }
-  .pts-legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #6B7280; }
-  .pts-dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
-
-  /* Table */
-  .table-wrap { overflow-x: auto; }
-  .table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
-  .table th {
-    text-align: left; padding: 9px 12px;
-    font-size: 11.5px; text-transform: uppercase;
-    letter-spacing: 0.06em; color: #9CA3AF;
-    font-weight: 600; border-bottom: 1px solid #F3F4F6;
-  }
-  .table td { padding: 11px 12px; border-bottom: 1px solid #F9FAFB; color: #374151; }
-  .table tr:last-child td { border-bottom: none; }
-  .table tr:hover td { background: #FAFAFA; }
-  .num { color: #9CA3AF; font-size: 12px; }
-  .score-chip {
-    background: #EFF6FF; color: #1D4ED8;
-    border-radius: 6px; padding: 2px 8px;
-    font-size: 12.5px; font-weight: 600;
-  }
-  .score-chip.blue  { background: #EFF6FF; color: #1D4ED8; }
-  .score-chip.green { background: #ECFDF5; color: #065F46; }
-  .score-chip.amber { background: #FFFBEB; color: #92400E; }
-  .grade { border-radius: 6px; padding: 3px 9px; font-size: 12px; font-weight: 600; }
-  .g-a { background: #D1FAE5; color: #065F46; }
-  .g-b { background: #DBEAFE; color: #1E40AF; }
-  .g-c { background: #FEF3C7; color: #92400E; }
-  .badge-inline { border-radius: 6px; padding: 2px 8px; font-size: 11.5px; font-weight: 600; }
-  .total-pts { font-size: 14px; color: #4F46E5; }
-
-  /* Modal */
-  .modal-bg {
-    position: fixed; inset: 0;
-    background: rgba(17,24,39,0.4);
-    backdrop-filter: blur(4px);
-    display: flex; align-items: center; justify-content: center;
-    z-index: 50; padding: 20px;
-  }
-  .modal {
-    background: #fff; border: 1px solid #E5E7EB;
-    border-radius: 16px; padding: 28px; width: 100%; max-width: 420px;
-    box-shadow: 0 20px 50px rgba(0,0,0,0.12);
-  }
-  .modal-head {
-    display: flex; justify-content: space-between;
-    align-items: center; margin-bottom: 8px;
-  }
-  .modal-head h3 { font-size: 16px; font-weight: 700; color: #111827; }
-  .icon-btn {
-    background: #F3F4F6; border: none; border-radius: 7px;
-    color: #6B7280; cursor: pointer; padding: 5px; display: flex;
-    transition: background 0.15s;
-  }
-  .icon-btn:hover { background: #E5E7EB; }
-  .modal-desc { font-size: 13px; color: #6B7280; line-height: 1.6; margin-bottom: 20px; }
-  .field-label { display: block; font-size: 12.5px; font-weight: 600; color: #374151; margin-bottom: 6px; }
-  .field-input {
-    width: 100%; padding: 10px 12px;
-    border: 1.5px solid #E5E7EB; border-radius: 8px;
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    font-size: 14px; color: #111827; outline: none;
-    transition: border-color 0.15s; background: #fff;
-  }
-  .field-input:focus { border-color: #3B82F6; }
-  .field-input::placeholder { color: #9CA3AF; }
-  .field-input:disabled { background: #F9FAFB; cursor: not-allowed; }
-  .feedback {
-    display: flex; align-items: center; gap: 7px;
-    padding: 9px 12px; border-radius: 8px;
-    font-size: 13px; font-weight: 500; margin-top: 10px;
-  }
-  .feedback.success { background: #D1FAE5; color: #065F46; }
-  .feedback.error   { background: #FEE2E2; color: #991B1B; }
-  .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
-  .btn-outline {
-    padding: 9px 18px; border: 1.5px solid #E5E7EB; border-radius: 8px;
-    background: #fff; color: #374151;
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    font-size: 13.5px; font-weight: 600; cursor: pointer;
-    transition: background 0.15s;
-  }
-  .btn-outline:hover { background: #F9FAFB; }
-  .btn-outline:disabled { opacity: 0.4; cursor: not-allowed; }
-  .btn-primary {
-    display: flex; align-items: center; gap: 6px;
-    padding: 9px 20px; background: #1D4ED8; color: #fff;
-    border: none; border-radius: 8px;
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    font-size: 13.5px; font-weight: 600; cursor: pointer;
-    transition: background 0.15s;
-  }
-  .btn-primary:hover { background: #1E40AF; }
-  .btn-primary:disabled { opacity: 0.45; cursor: not-allowed; }
-
-  /* Misc */
-  .center-screen {
-    min-height: 100vh; background: #F3F4F6;
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    font-family: 'Plus Jakarta Sans', sans-serif;
-  }
-  .error-box {
-    display: flex; align-items: center; gap: 8px;
-    background: #FEE2E2; color: #991B1B;
-    border: 1px solid #FECACA; border-radius: 10px;
-    padding: 14px 20px; font-size: 14px; font-weight: 500;
-  }
-  .empty {
-    display: flex; flex-direction: column; align-items: center;
-    justify-content: center; gap: 10px;
-    padding: 40px 20px; color: #9CA3AF;
-    font-size: 13.5px; text-align: center;
-  }
-  .spin { animation: spin 1s linear infinite; }
-  @keyframes spin { to { transform: rotate(360deg); } }
-
-  @media (max-width: 768px) {
-    .sidebar { display: none; }
-    .main { padding: 20px 14px 40px; }
-    .stats-row { grid-template-columns: repeat(2, 1fr); }
-    .topbar { flex-direction: column; align-items: flex-start; }
-  }
-`;
-
-export default Admin;
+export default Admin;  

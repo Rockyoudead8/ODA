@@ -1,0 +1,157 @@
+const express = require("express");
+const router = express.Router();
+const Post = require("../models/Post");
+const Listing = require("../models/listings");
+const CityPoints = require("../models/CityPoints");
+const parser = require("../config/upload");
+const passport = require("passport");
+
+router.post(
+  "/create",
+  passport.authenticate("jwt", { session: false }),
+  parser.single("image"),
+  async (req, res) => {
+    try {
+      console.log("CREATE POST HIT");
+      const post = new Post({
+        user: req.user._id,
+        city: req.body.city,
+        content: req.body.content,
+        image: req.file ? req.file.path : null,
+      });
+
+      await post.save();
+
+      // Check if the post's city matches any listing in the DB (case-insensitive)
+      if (req.body.city && req.body.city.trim()) {
+        const matchedListing = await Listing.findOne({
+          title: { $regex: new RegExp(`^${req.body.city.trim()}$`, "i") },
+        });
+
+        if (matchedListing) {
+          // Award 10 post points for city-matched posts
+          await CityPoints.findOneAndUpdate(
+            { userId: req.user._id, cityName: matchedListing.title },
+            {
+              $inc: { postPoints: 10 },
+              $set: { updatedAt: new Date() },
+            },
+            { upsert: true, new: true }
+          );
+        }
+      }
+
+      res.json(post);
+    } catch (err) {
+      res.status(500).json(err);
+    }
+  }
+);
+
+// to show the posts in the feed page of the community section
+router.get("/feed", async (req, res) => {
+  console.log("GET FEED HIT");
+  const posts = await Post.find()
+    .populate("user", "name")
+    .populate("comments.user", "name")
+    .populate("comments.replies.user", "name")
+    .sort({ createdAt: -1 });
+
+  res.json(posts);
+});
+
+/* ADD COMMENT TO POST */
+
+router.post(
+  "/:postId/comment",
+  passport.authenticate("jwt", { session: false }),
+  async (req, res) => {
+    try {
+      const { text } = req.body;
+
+      const post = await Post.findById(req.params.postId);
+
+      if (!post) {
+        return res.status(404).json({ message: "Post not found" });
+      }
+
+      post.comments.push({
+        user: req.user._id,
+        text: text,
+      });
+
+      await post.save();
+
+      res.json(post);
+    } catch (err) {
+      res.status(500).json(err);
+    }
+  }
+);
+
+/* REPLY TO A COMMENT */
+
+router.post(
+  "/:postId/comment/:commentId/reply",
+  passport.authenticate("jwt", { session: false }),
+  async (req, res) => {
+    try {
+      const { text } = req.body;
+
+      const post = await Post.findById(req.params.postId);
+
+      if (!post) {
+        return res.status(404).json({ message: "Post not found" });
+      }
+
+      const comment = post.comments.id(req.params.commentId);
+
+      if (!comment) {
+        return res.status(404).json({ message: "Comment not found" });
+      }
+
+      comment.replies.push({
+        user: req.user._id,
+        text: text,
+      });
+
+      await post.save();
+
+      res.json(post);
+    } catch (err) {
+      res.status(500).json(err);
+    }
+  }
+);
+
+// like a post and unlike a post
+router.post(
+  "/:postId/like",
+  passport.authenticate("jwt", { session: false }),
+  async (req, res) => {
+    try {
+      const post = await Post.findById(req.params.postId);
+
+      if (!post) {
+        return res.status(404).json({ message: "Post not found" });
+      }
+
+      const userId = req.user._id;
+      if (post.likes.some((id) => id.toString() === userId.toString())) {
+        post.likes = post.likes.filter(
+          (id) => id.toString() !== userId.toString()
+        );
+      } else {
+        post.likes.push(userId);
+      }
+
+      await post.save();
+
+      res.json(post);
+    } catch (err) {
+      res.status(500).json(err);
+    }
+  }
+);
+
+module.exports = router;
