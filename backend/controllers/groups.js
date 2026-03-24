@@ -24,7 +24,7 @@ exports.createGroup = async (req, res) => {
 
     // ── Socket: add online members to the room & notify them ─────────────
     try {
-      const { io, userSocketMap } = require("../socket");
+      const { io, userSocketMap } = require("../config/socket");
 
       allMembers.forEach((memberId) => {
         const socketId = userSocketMap[memberId.toString()];
@@ -125,7 +125,7 @@ exports.sendGroupMessage = async (req, res) => {
 
     // ── Socket: broadcast to the whole group room ─────────────────────────
     try {
-      const { io } = require("../socket");
+      const { io } = require("../config/socket");
       io.to(id).emit("receive_group_message", populated);
     } catch (_) {}
 
@@ -158,7 +158,7 @@ exports.leaveGroup = async (req, res) => {
 
     // ── Socket: notify remaining members & remove user from room ──────────
     try {
-      const { io, userSocketMap } = require("../socket");
+      const { io, userSocketMap } = require("../config/socket");
 
       // Broadcast to the room so other members update their member count
       io.to(id).emit("group_member_left", {
