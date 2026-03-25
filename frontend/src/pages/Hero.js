@@ -36,7 +36,6 @@ function Hero() {
     fetchListings();
   }, []);
 
-  // Dropdown search results
   useEffect(() => {
     if (!searchQuery.trim()) {
       setDropdownResults([]);
@@ -53,7 +52,6 @@ function Hero() {
     setShowDropdown(true);
   }, [searchQuery, listings]);
 
-  // Close dropdown on outside click
   useEffect(() => {
     const handler = (e) => {
       if (searchRef.current && !searchRef.current.contains(e.target)) {
@@ -64,10 +62,11 @@ function Hero() {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
+  // Fixed: route matches App.js /Specific/:id (capital S)
   const handleSelectCity = (listing) => {
     setShowDropdown(false);
     setSearchQuery("");
-    navigate(`/specific/${listing._id}`);
+    navigate(`/Specific/${listing._id}`);
   };
 
   const handleSuggestCity = () => {
@@ -79,103 +78,98 @@ function Hero() {
 
   if (loading)
     return (
-      <div style={{ minHeight: "100vh", background: "#0a0a0f", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "16px" }}>
-          <div style={{ width: "40px", height: "40px", border: "2px solid #7c3aed", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
-          <p style={{ color: "#a78bfa", fontSize: "0.8rem", letterSpacing: "0.15em", textTransform: "uppercase" }}>Loading cities...</p>
+      <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-10 h-10 border-2 border-violet-600 border-t-transparent rounded-full animate-spin" />
+          <p className="text-violet-400 text-xs tracking-[0.15em] uppercase">Loading cities...</p>
         </div>
-        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     );
 
   if (error)
     return (
-      <div style={{ minHeight: "100vh", background: "#0a0a0f", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <p style={{ color: "#f43f5e", fontWeight: 600 }}>{error}</p>
+      <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center">
+        <p className="text-rose-400 font-semibold">{error}</p>
       </div>
     );
 
   return (
-    <div style={{ minHeight: "100vh", paddingBottom: "96px", background: "linear-gradient(135deg, #0a0a0f 0%, #0f0a1a 40%, #0a0f1a 100%)", position: "relative" }}>
-      {/* Ambient glows */}
-      <div style={{ position: "fixed", inset: 0, pointerEvents: "none", overflow: "hidden", zIndex: 0 }}>
-        <div style={{ position: "absolute", top: "-10%", left: "20%", width: "600px", height: "600px", background: "radial-gradient(circle, rgba(139,92,246,0.12) 0%, transparent 70%)", borderRadius: "50%", filter: "blur(40px)" }} />
-        <div style={{ position: "absolute", bottom: "10%", right: "5%", width: "500px", height: "500px", background: "radial-gradient(circle, rgba(236,72,153,0.08) 0%, transparent 70%)", borderRadius: "50%", filter: "blur(40px)" }} />
-        <div style={{ position: "absolute", top: "40%", left: "-10%", width: "400px", height: "400px", background: "radial-gradient(circle, rgba(59,130,246,0.06) 0%, transparent 70%)", borderRadius: "50%", filter: "blur(40px)" }} />
+    <div className="min-h-screen pb-24 relative overflow-x-hidden"
+      style={{ background: "linear-gradient(135deg, #0a0a0f 0%, #0f0a1a 40%, #0a0f1a 100%)" }}>
+
+      {/* Ambient glows - pointer-events-none so they don't block clicks */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+        <div className="absolute -top-[10%] left-[20%] w-[300px] h-[300px] md:w-[600px] md:h-[600px] rounded-full"
+          style={{ background: "radial-gradient(circle, rgba(139,92,246,0.12) 0%, transparent 70%)", filter: "blur(40px)" }} />
+        <div className="absolute bottom-[10%] right-[5%] w-[250px] h-[250px] md:w-[500px] md:h-[500px] rounded-full"
+          style={{ background: "radial-gradient(circle, rgba(236,72,153,0.08) 0%, transparent 70%)", filter: "blur(40px)" }} />
       </div>
 
-      <div style={{ position: "relative", zIndex: 1 }}>
+      <div className="relative z-10">
         {/* Hero Section */}
         <motion.div
-          style={{ maxWidth: "896px", margin: "0 auto", padding: "80px 24px 48px", textAlign: "center" }}
+          className="max-w-4xl mx-auto px-4 sm:px-6 pt-16 sm:pt-20 pb-8 sm:pb-12 text-center"
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.9, ease: "easeOut" }}
         >
           <motion.div
-            style={{ display: "inline-flex", alignItems: "center", gap: "8px", marginBottom: "24px" }}
+            className="inline-flex items-center gap-2 mb-6"
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
           >
-            <span style={{ background: "rgba(139,92,246,0.15)", border: "1px solid rgba(139,92,246,0.35)", color: "#c4b5fd", padding: "4px 16px", borderRadius: "999px", fontSize: "0.72rem", letterSpacing: "0.12em", textTransform: "uppercase", fontWeight: 600 }}>
-              <Globe style={{ display: "inline", width: "12px", height: "12px", marginRight: "6px", marginBottom: "2px" }} />
+            <span className="flex items-center gap-1.5 bg-violet-500/15 border border-violet-500/35 text-violet-300 px-4 py-1.5 rounded-full text-xs tracking-[0.12em] uppercase font-semibold">
+              <Globe className="w-3 h-3" />
               Discover the World's Cities
             </span>
           </motion.div>
 
-  <motion.div
-  className="max-w-4xl mx-auto text-center px-6 py-20 pt-2"
-  initial={{ opacity: 0, y: 40 }}
-  animate={{ opacity: 1, y: 0 }}
-  transition={{ duration: 0.9, ease: "easeOut" }}
->
-  {/* Heading */}
-  <motion.h1
-    className="text-5xl md:text-7xl lg:text-8xl leading-[0.95] tracking-[-0.02em] text-gray-100"
-    style={{ fontFamily: "'Playfair Display', serif" }}
-    initial={{ opacity: 0, y: 30 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ delay: 0.2, duration: 0.7 }}
-  >
-    Let’s start the
-    <br />
-    Journey
-  </motion.h1>
+          <motion.h1
+            className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl leading-[0.95] tracking-[-0.02em] text-gray-100 mb-5"
+            style={{ fontFamily: "'Playfair Display', serif" }}
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2, duration: 0.7 }}
+          >
+            Let's start the<br />Journey
+          </motion.h1>
 
-  {/* Subtext */}
-  <motion.p
-  className="mt-5 text-sm md:text-base text-gray-400 leading-[1.6] tracking-[0.02em] max-w-md mx-auto"
-  style={{ fontFamily: "Inter, sans-serif" }}
-  initial={{ opacity: 0 }}
-  animate={{ opacity: 1 }}
-  transition={{ delay: 0.4, duration: 0.7 }}
->
-  discover history, culture, and stories of the world’s most fascinating cities.
-</motion.p>
-</motion.div>
+          <motion.p
+            className="text-sm md:text-base text-gray-400 leading-relaxed tracking-wide max-w-md mx-auto mb-8"
+            style={{ fontFamily: "Inter, sans-serif" }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.4, duration: 0.7 }}
+          >
+            Discover history, culture, and stories of the world's most fascinating cities.
+          </motion.p>
 
-          {/* Search Box with Dropdown */}
+          {/* Search Box */}
           <motion.div
-            style={{ position: "relative", maxWidth: "512px", margin: "0 auto" }}
+            className="relative max-w-xl mx-auto"
             ref={searchRef}
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.6, duration: 0.5 }}
           >
-            <Search style={{ position: "absolute", left: "20px", top: "50%", transform: "translateY(-50%)", width: "20px", height: "20px", color: "#7c3aed", zIndex: 2, pointerEvents: "none" }} />
+            <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-violet-500 z-10 pointer-events-none" />
             <input
               type="text"
-              placeholder="Search Cities (e.g., Paris, Tokyo, Rome)..."
+              placeholder="Search cities (e.g. Paris, Tokyo)..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onFocus={() => searchQuery.trim() && setShowDropdown(true)}
-              style={{ width: "100%", padding: "14px 20px 14px 52px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(139,92,246,0.3)", borderRadius: showDropdown ? "18px 18px 0 0" : "999px", color: "#e2d9ff", fontSize: "0.95rem", outline: "none", backdropFilter: "blur(12px)", boxSizing: "border-box", transition: "border-radius 0.2s, border-color 0.2s, box-shadow 0.2s" }}
-              onMouseEnter={(e) => { e.target.style.borderColor = "rgba(139,92,246,0.7)"; e.target.style.boxShadow = "0 0 0 3px rgba(139,92,246,0.15)"; }}
-              onMouseLeave={(e) => { if (!showDropdown) { e.target.style.borderColor = "rgba(139,92,246,0.3)"; e.target.style.boxShadow = "none"; } }}
+              className="w-full pl-14 pr-5 py-3.5 text-sm outline-none transition-all duration-200"
+              style={{
+                background: "rgba(255,255,255,0.05)",
+                border: "1px solid rgba(139,92,246,0.3)",
+                borderRadius: showDropdown ? "18px 18px 0 0" : "999px",
+                color: "#e2d9ff",
+                backdropFilter: "blur(12px)",
+              }}
             />
 
-            {/* Dropdown */}
             <AnimatePresence>
               {showDropdown && (
                 <motion.div
@@ -183,45 +177,52 @@ function Hero() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -4 }}
                   transition={{ duration: 0.15 }}
-                  style={{ position: "absolute", top: "100%", left: 0, right: 0, background: "rgba(15,10,26,0.97)", border: "1px solid rgba(139,92,246,0.35)", borderTop: "none", borderRadius: "0 0 18px 18px", backdropFilter: "blur(20px)", zIndex: 50, overflow: "hidden", boxShadow: "0 20px 60px rgba(0,0,0,0.6)" }}
+                  className="absolute top-full left-0 right-0 z-50 overflow-hidden"
+                  style={{
+                    background: "rgba(15,10,26,0.97)",
+                    border: "1px solid rgba(139,92,246,0.35)",
+                    borderTop: "none",
+                    borderRadius: "0 0 18px 18px",
+                    backdropFilter: "blur(20px)",
+                    boxShadow: "0 20px 60px rgba(0,0,0,0.6)",
+                  }}
                 >
                   {dropdownResults.map((listing, i) => (
                     <div
                       key={listing._id}
                       onClick={() => handleSelectCity(listing)}
-                      style={{ display: "flex", alignItems: "center", gap: "12px", padding: "11px 20px", cursor: "pointer", borderBottom: i < dropdownResults.length - 1 ? "1px solid rgba(139,92,246,0.1)" : "none", transition: "background 0.15s" }}
-                      onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(139,92,246,0.12)")}
-                      onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                      className="flex items-center gap-3 px-5 py-3 cursor-pointer transition-colors hover:bg-violet-500/10"
+                      style={{ borderBottom: i < dropdownResults.length - 1 ? "1px solid rgba(139,92,246,0.1)" : "none" }}
                     >
-                      <div style={{ width: "32px", height: "32px", borderRadius: "8px", overflow: "hidden", flexShrink: 0, border: "1px solid rgba(139,92,246,0.2)" }}>
+                      <div className="w-8 h-8 rounded-lg overflow-hidden shrink-0 border border-violet-500/20">
                         <img
                           src={listing.images?.[0] || "https://placehold.co/32x32/1a1030/7c3aed?text=C"}
                           alt={listing.title}
-                          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                          className="w-full h-full object-cover"
                           onError={(e) => { e.target.src = "https://placehold.co/32x32/1a1030/7c3aed?text=C"; }}
                         />
                       </div>
-                      <div style={{ flex: 1, minWidth: 0, textAlign: "left" }}>
-                        <p style={{ color: "#e2d9ff", fontSize: "0.9rem", fontWeight: 600, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{listing.title}</p>
+                      <div className="flex-1 min-w-0 text-left">
+                        <p className="text-sm font-semibold text-violet-100 truncate">{listing.title}</p>
                         {listing.description && (
-                          <p style={{ color: "#64748b", fontSize: "0.75rem", margin: "1px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{listing.description}</p>
+                          <p className="text-xs text-slate-500 truncate">{listing.description}</p>
                         )}
                       </div>
-                      <MapPin style={{ width: "14px", height: "14px", color: "#7c3aed", flexShrink: 0 }} />
+                      <MapPin className="w-3.5 h-3.5 text-violet-500 shrink-0" />
                     </div>
                   ))}
 
-                  {/* No results → suggest city */}
                   {noResults && (
-                    <div style={{ padding: "16px 20px" }}>
-                      <p style={{ color: "#64748b", fontSize: "0.82rem", margin: "0 0 10px" }}>No cities found for "<span style={{ color: "#a78bfa" }}>{searchQuery}</span>"</p>
+                    <div className="px-5 py-4">
+                      <p className="text-slate-500 text-sm mb-2.5">
+                        No cities found for "<span className="text-violet-400">{searchQuery}</span>"
+                      </p>
                       <button
                         onClick={handleSuggestCity}
-                        style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "8px 16px", background: "rgba(139,92,246,0.18)", border: "1px solid rgba(139,92,246,0.4)", borderRadius: "10px", color: "#c4b5fd", fontSize: "0.82rem", fontWeight: 600, cursor: "pointer", transition: "background 0.2s" }}
-                        onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(139,92,246,0.28)")}
-                        onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(139,92,246,0.18)")}
+                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-violet-300 text-sm font-semibold transition-colors hover:bg-violet-500/20"
+                        style={{ background: "rgba(139,92,246,0.15)", border: "1px solid rgba(139,92,246,0.4)" }}
                       >
-                        <Plus style={{ width: "13px", height: "13px" }} />
+                        <Plus className="w-3.5 h-3.5" />
                         Suggest "{searchQuery}" as a city
                       </button>
                     </div>
@@ -234,30 +235,35 @@ function Hero() {
 
         {/* Map Section */}
         <motion.div
-          style={{ maxWidth: "1152px", margin: "0 auto 80px", padding: "0 24px" }}
+          className="max-w-6xl mx-auto px-4 mt-20 sm:px-6 mb-16 sm:mb-24"
           initial={{ opacity: 0, y: 50 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.8, delay: 0.2 }}
         >
-          <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(139,92,246,0.2)", borderRadius: "20px", padding: "24px", backdropFilter: "blur(16px)", boxShadow: "0 25px 60px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06)" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "16px", paddingBottom: "12px", borderBottom: "1px solid rgba(139,92,246,0.15)" }}>
-              <div style={{ width: "8px", height: "8px", background: "#a78bfa", borderRadius: "50%", boxShadow: "0 0 8px #a78bfa" }} />
-              <h2 style={{ fontSize: "1.15rem", fontWeight: 700, color: "#c4b5fd", letterSpacing: "0.02em", margin: 0 }}>Cities on the Map</h2>
-            </div>
+          <div className="rounded-2xl p-2"
+            style={{
+              background: "rgba(255,255,255,0.03)",
+              border: "1px solid rgba(139,92,246,0.2)",
+              backdropFilter: "blur(16px)",
+              boxShadow: "0 25px 60px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06)",
+            }}>
             <Map />
           </div>
         </motion.div>
 
         {/* Cards Section */}
         {filteredListings.length === 0 ? (
-          <p style={{ textAlign: "center", color: "#475569", padding: "40px 0", fontSize: "1.05rem" }}>
-            No cities match your search query. Try a different name!
+          <p className="text-center text-slate-500 py-10 text-base px-4">
+            No cities match your search. Try a different name!
           </p>
         ) : (
           <motion.div
-            style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: "24px", maxWidth: "1280px", margin: "0 auto", padding: "0 24px" }}
-            variants={{ hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.08, delayChildren: 0.15 } } }}
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 max-w-7xl mx-auto px-4 sm:px-6"
+            variants={{
+              hidden: { opacity: 0 },
+              show: { opacity: 1, transition: { staggerChildren: 0.08, delayChildren: 0.15 } }
+            }}
             initial="hidden"
             animate="show"
           >
@@ -270,40 +276,48 @@ function Hero() {
                 whileTap={{ scale: 0.98 }}
               >
                 <Link
-                  to={`/specific/${listing._id}`}
-                  style={{ display: "block", borderRadius: "16px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(139,92,246,0.18)", boxShadow: "0 8px 32px rgba(0,0,0,0.35)", overflow: "hidden", textDecoration: "none", transition: "border-color 0.3s, box-shadow 0.3s" }}
-                  onMouseEnter={(e) => { e.currentTarget.style.borderColor = "rgba(167,139,250,0.5)"; e.currentTarget.style.boxShadow = "0 20px 50px rgba(0,0,0,0.5), 0 0 0 1px rgba(167,139,250,0.15)"; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.borderColor = "rgba(139,92,246,0.18)"; e.currentTarget.style.boxShadow = "0 8px 32px rgba(0,0,0,0.35)"; }}
+                  to={`/Specific/${listing._id}`}
+                  className="block rounded-2xl overflow-hidden no-underline transition-all duration-300 hover:shadow-2xl"
+                  style={{
+                    background: "rgba(255,255,255,0.04)",
+                    border: "1px solid rgba(139,92,246,0.18)",
+                    boxShadow: "0 8px 32px rgba(0,0,0,0.35)",
+                  }}
                 >
-                  <div style={{ position: "relative", overflow: "hidden", height: "192px" }}>
+                  <div className="relative overflow-hidden h-48">
                     <motion.img
-                      style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center", display: "block" }}
+                      className="w-full h-full object-cover object-center block"
                       src={listing.images?.[0] || "https://placehold.co/600x400/1a1030/7c3aed?text=City+View"}
                       alt={listing.title}
                       onError={(e) => { e.target.onerror = null; e.target.src = "https://placehold.co/600x400/1a1030/7c3aed?text=City+View"; }}
                       whileHover={{ scale: 1.08 }}
                       transition={{ type: "spring", stiffness: 180 }}
                     />
-                    <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(10,10,20,0.7) 0%, transparent 60%)" }} />
-                    <div style={{ position: "absolute", top: "10px", right: "10px", background: "rgba(0,0,0,0.55)", backdropFilter: "blur(8px)", border: "1px solid rgba(167,139,250,0.3)", borderRadius: "999px", padding: "3px 10px", display: "flex", alignItems: "center", gap: "4px" }}>
-                      <Star style={{ width: "11px", height: "11px", color: "#facc15", fill: "#facc15" }} />
-                      <span style={{ color: "#e2e8f0", fontSize: "0.68rem", fontWeight: 600 }}>Featured</span>
+                    <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(10,10,20,0.7) 0%, transparent 60%)" }} />
+                    <div className="absolute top-2.5 right-2.5 flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold"
+                      style={{ background: "rgba(0,0,0,0.55)", backdropFilter: "blur(8px)", border: "1px solid rgba(167,139,250,0.3)", color: "#e2e8f0" }}>
+                      <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
+                      Featured
                     </div>
                   </div>
-                  <div style={{ padding: "18px 20px 20px" }}>
-                    <h5 style={{ fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: "1.05rem", color: "#e2d9ff", margin: "0 0 8px 0" }}>
-                      {listing.title}
-                    </h5>
-                    <p style={{ fontSize: "0.85rem", marginBottom: "20px", color: "#64748b", lineHeight: 1.6, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+
+                  <div className="p-4 sm:p-5">
+                    <h5 className="font-bold text-violet-100 text-base truncate mb-2">{listing.title}</h5>
+                    <p className="text-sm text-slate-500 leading-relaxed mb-4 line-clamp-2">
                       {listing.description || "No description available."}
                     </p>
                     <motion.div
-                      style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", fontWeight: 600, padding: "10px 16px", borderRadius: "12px", fontSize: "0.875rem", background: "linear-gradient(135deg, rgba(124,58,237,0.8) 0%, rgba(139,92,246,0.8) 100%)", border: "1px solid rgba(167,139,250,0.4)", color: "#ede9fe", boxShadow: "0 4px 16px rgba(109,40,217,0.25)", cursor: "pointer" }}
-                      whileHover={{ background: "linear-gradient(135deg, rgba(124,58,237,1) 0%, rgba(167,139,250,1) 100%)", boxShadow: "0 6px 24px rgba(109,40,217,0.45)" }}
+                      className="w-full flex items-center justify-center gap-2 font-semibold py-2.5 px-4 rounded-xl text-sm text-violet-100 cursor-pointer"
+                      style={{
+                        background: "linear-gradient(135deg, rgba(124,58,237,0.8) 0%, rgba(139,92,246,0.8) 100%)",
+                        border: "1px solid rgba(167,139,250,0.4)",
+                        boxShadow: "0 4px 16px rgba(109,40,217,0.25)",
+                      }}
+                      whileHover={{ boxShadow: "0 6px 24px rgba(109,40,217,0.45)" }}
                       whileTap={{ scale: 0.97 }}
                     >
                       Explore City
-                      <ArrowRight style={{ width: "16px", height: "16px" }} />
+                      <ArrowRight className="w-4 h-4" />
                     </motion.div>
                   </div>
                 </Link>
