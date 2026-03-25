@@ -8,7 +8,6 @@ const quiz = require("../models/quiz");
 const quizResult = require("../models/QuizResult");
 const passport = require("passport");
 const localStrategy = require("passport-local");
-const isLoggedIn = require('../middlewares/mw');
 const jwt = require("jsonwebtoken");
 const otpModel = require("../models/otp");
 

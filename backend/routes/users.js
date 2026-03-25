@@ -12,50 +12,6 @@ const localStrategy = require("passport-local");
 const c = require("../controllers/user");
 const jwt = require("jsonwebtoken");
 
-
-// user ki visited cities ko count krne ka code
-// router.post("/",passport.authenticate("jwt", { session: false }), async (req, res) => {
-//   try {
-//     const { listingId } = req.body;
-
-//     const userId = req.user._id;
-
-//     if (!userId || !listingId) {
-//       return res.status(400).json({ error: "userId and listingId are required" });
-//     }
-
-//     const listing = await listings.findById(listingId);
-//     if (!listing) return res.status(404).json({ error: "Listing not found" });
-
-//     const cityName = listing.title;
-
-//     const foundUser = await user.findById(userId);
-//     if (!foundUser) return res.status(404).json({ error: "User not found" });
-
-//     const alreadyVisited = foundUser.visitedCities?.includes(cityName);
-
-//     if (alreadyVisited) {
-//       foundUser.visitedCities = foundUser.visitedCities.filter((city) => city !== cityName);
-//       foundUser.citiesVisited = Math.max(0, (foundUser.citiesVisited || 0) - 1);
-//     } else {
-//       foundUser.visitedCities = [...(foundUser.visitedCities || []), cityName];
-//       foundUser.citiesVisited = (foundUser.citiesVisited || 0) + 1;
-//     }
-
-//     await foundUser.save();
-
-//     res.json({
-//       message: "City visit status updated",
-//       visited: !alreadyVisited,
-//       count: foundUser.citiesVisited,
-//       city: cityName,
-//     });
-//   } catch (error) {
-//     console.error(error);
-//     res.status(500).json({ error: "Server error" });
-//   }
-// });
-
 // toggle visit
 router.post("/toggle-visit", passport.authenticate("jwt", { session: false }), async (req, res) => {
   try {

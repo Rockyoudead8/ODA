@@ -26,7 +26,6 @@ var passport = require("passport");
 var localStrategy = require("passport-local");
 const userModel = require("./models/users");
 const cors = require('cors');
-var isLoggedIn = require('./middlewares/mw');
 const GoogleStrategy = require("passport-google-oauth20").Strategy;
 const jwt_strategy = require("./config/passport");
 const {app, server} = require("./config/socket");
