@@ -126,7 +126,6 @@ router.post('/login', c.handleLogin);
 router.post('/verify-otp', c.handleSignup);
 
 // logout route 
-// see why just using req.logout is not working?? - IMPORTANT // it is method by passport 
 router.get("/logout", c.handleLogout);
 
 // new code for status
@@ -167,12 +166,12 @@ router.get("/google/callback", (req, res, next) => {
 
       if (err) {
         console.log("Error with server");
-        return res.redirect("http://localhost:5173/login?error=server");
+        return res.redirect(`${process.env.FRONTEND_URL}/login?error=server`);
       }
 
       if (!user) {
         console.log("Google login failed");
-        return res.redirect("http://localhost:5173/login?error=auth_failed");
+        return res.redirect(`${process.env.FRONTEND_URL}/login?error=auth_failed`);
       }
 
       const payload = {
@@ -189,19 +188,17 @@ router.get("/google/callback", (req, res, next) => {
       // store JWT in cookie
       res.cookie("jwt", token, {
         httpOnly: true,
-        secure: false, // change to true in production
-        sameSite: "lax"
+        secure: process.env.NODE_ENV === "production",
+        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax"
       });
 
-      // cookies are easier to use when we are redirecting 
-
-      // Redirect to frontend dashboard (or Hero page)
-      res.redirect("http://localhost:3000/Hero");
+      // Redirect to frontend
+      res.redirect(`${process.env.FRONTEND_URL}/Hero`);
 
     })(req, res, next);
   } catch (err) {
     console.error(err);
-    res.redirect("http://localhost:5173/login?error=exception");
+    res.redirect(`${process.env.FRONTEND_URL}/login?error=exception`);
   }
 });
 
