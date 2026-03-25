@@ -2,6 +2,7 @@ import React, { useState, useContext, useEffect } from "react";
 import { MapPin, X, Eye, EyeOff, Compass } from "lucide-react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { UserContext } from "../UserContext";
+import { BACKEND_URL } from '../utils/config';
 
 function LoginPage() {
   const { setUser } = useContext(UserContext);
@@ -27,7 +28,7 @@ function LoginPage() {
     e.preventDefault();
     setLoading(true);
     try {
-      const response = await fetch("http://localhost:8000/api/auth/login", {
+      const response = await fetch(`${BACKEND_URL}/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -48,7 +49,7 @@ function LoginPage() {
   };
 
   const handleGoogleLogin = () => {
-    window.location.href = "http://localhost:8000/api/auth/google";
+    window.location.href = `${BACKEND_URL}/api/auth/google`;
   };
 
   return (

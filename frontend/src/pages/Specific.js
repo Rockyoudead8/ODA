@@ -7,6 +7,7 @@ import Slider from "react-slick";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 import Leaderboard from "../components/Leaderboard";
+import { BACKEND_URL } from '../utils/config';
 import {
   Heart, MapPin, MessageCircle, Volume2, Globe,
   Clock, CheckCircle, Send, Camera, Users, Star,
@@ -36,7 +37,7 @@ function Specific() {
     if (visiting) return;
     setVisiting(true);
     try {
-      const res  = await fetch("http://localhost:8000/api/toggle-visit", {
+      const res  = await fetch(`${BACKEND_URL}/api/toggle-visit`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ listingId: id }),
@@ -47,7 +48,7 @@ function Specific() {
       if (!res.ok) throw new Error(data.error || "Failed to update visit");
       setVisited(data.visited);
       if (listing?.title) {
-        const visitRes  = await fetch(`http://localhost:8000/api/get_visits?cityName=${encodeURIComponent(listing.title)}`, { credentials: "include" });
+        const visitRes  = await fetch(`${BACKEND_URL}/api/get_visits?cityName=${encodeURIComponent(listing.title)}`, { credentials: "include" });
         if (visitRes.ok) { const vd = await visitRes.json(); setVisitCount(vd.userCount || 0); }
       }
       displayMessage(data.visited ? "City marked as visited!" : "Visit status removed.", false);
@@ -64,8 +65,8 @@ function Specific() {
       try {
         setLoading(true);
         const [listingRes, commentsRes] = await Promise.all([
-          fetch(`http://localhost:8000/api/listing/${id}`, { credentials: "include" }),
-          fetch(`http://localhost:8000/api/comments/${id}`, { credentials: "include" }),
+          fetch(`${BACKEND_URL}/api/listing/${id}`, { credentials: "include" }),
+          fetch(`${BACKEND_URL}/api/comments/${id}`, { credentials: "include" }),
         ]);
         if (!listingRes.ok) throw new Error("Failed to fetch listing");
         const listingData  = await listingRes.json();
@@ -76,11 +77,11 @@ function Specific() {
 
         if (listingData?.title) {
           try {
-            const checkRes = await fetch(`http://localhost:8000/api/check-visit?cityName=${encodeURIComponent(listingData.title)}`, { credentials: "include" });
+            const checkRes = await fetch(`${BACKEND_URL}/api/check-visit?cityName=${encodeURIComponent(listingData.title)}`, { credentials: "include" });
             if (checkRes.ok) { const cd = await checkRes.json(); setVisited(!!cd.visited); }
           } catch (_) {}
           try {
-            const visitRes = await fetch(`http://localhost:8000/api/get_visits?cityName=${encodeURIComponent(listingData.title)}`, { credentials: "include" });
+            const visitRes = await fetch(`${BACKEND_URL}/api/get_visits?cityName=${encodeURIComponent(listingData.title)}`, { credentials: "include" });
             if (visitRes.ok) { const vd = await visitRes.json(); setVisitCount(vd.userCount || 0); }
           } catch (_) {}
         }
@@ -120,14 +121,14 @@ function Specific() {
       const formData = new FormData();
       formData.append("image", commentImage);
       try {
-        const res  = await fetch("http://localhost:8000/api/upload/image", { method: "POST", body: formData, credentials: "include" });
+        const res  = await fetch(`${BACKEND_URL}/api/upload/image`, { method: "POST", body: formData, credentials: "include" });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Image upload failed");
         imageUrl = data.url;
       } catch (err) { console.error(err); displayMessage("Failed to upload image.", true); return; }
     }
     try {
-      const res  = await fetch("http://localhost:8000/api/comments", {
+      const res  = await fetch(`${BACKEND_URL}/api/comments`, {
         method: "POST", credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ listing: id, text: commentText, image: imageUrl }),

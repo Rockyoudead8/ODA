@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef, useContext } from "react";
 import CreatePost from "../components/CreatePost";
 import { UserContext } from "../UserContext";
+import { BACKEND_URL } from '../utils/config';
 import {
   ThumbsUp, Flame, Clock, Users, MapPin,
   BarChart2, TrendingUp, Share2, Bookmark, Trash2, Menu, X,
@@ -220,7 +221,7 @@ function Community() {
   const middlePanelRef = useRef(null);
 
   useEffect(() => {
-    fetch("http://localhost:8000/api/community/feed", { credentials: "include" })
+    fetch(`${BACKEND_URL}/api/community/feed`, { credentials: "include" })
       .then(r => r.json())
       .then(d => setPosts(Array.isArray(d) ? d : []))
       .catch(console.error)
@@ -228,7 +229,7 @@ function Community() {
   }, []);
 
   const refreshFeed = async () => {
-    const res  = await fetch("http://localhost:8000/api/community/feed", { credentials: "include" });
+    const res  = await fetch(`${BACKEND_URL}/api/community/feed`, { credentials: "include" });
     const data = await res.json();
     setPosts(Array.isArray(data) ? data : []);
   };
@@ -243,7 +244,7 @@ function Community() {
         return { ...p, likes: alreadyLiked ? p.likes.filter(l => (l?._id ?? l)?.toString() !== userId) : [...p.likes, userId] };
       }));
     }
-    await fetch(`http://localhost:8000/api/community/${postId}/like`, { method: "POST", credentials: "include" });
+    await fetch(`${BACKEND_URL}/api/community/${postId}/like`, { method: "POST", credentials: "include" });
     await refreshFeed();
   };
 
@@ -251,7 +252,7 @@ function Community() {
     if (!window.confirm("Delete this post?")) return;
     setDeletingId(postId);
     try {
-      await fetch(`http://localhost:8000/api/community/${postId}`, { method: "DELETE", credentials: "include" });
+      await fetch(`${BACKEND_URL}/api/community/${postId}`, { method: "DELETE", credentials: "include" });
       setPosts(prev => prev.filter(p => p._id?.toString() !== postId.toString()));
     } catch (err) { console.error("Delete failed:", err); }
     finally { setDeletingId(null); }
@@ -268,7 +269,7 @@ function Community() {
   const addComment = async (postId) => {
     const text = commentText[postId];
     if (!text?.trim()) return;
-    await fetch(`http://localhost:8000/api/community/${postId}/comment`, {
+    await fetch(`${BACKEND_URL}/api/community/${postId}/comment`, {
       method: "POST", credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ text }),
@@ -280,7 +281,7 @@ function Community() {
   const addReply = async (postId, commentId) => {
     const text = replyText[commentId];
     if (!text?.trim()) return;
-    await fetch(`http://localhost:8000/api/community/${postId}/comment/${commentId}/reply`, {
+    await fetch(`${BACKEND_URL}/api/community/${postId}/comment/${commentId}/reply`, {
       method: "POST", credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ text }),

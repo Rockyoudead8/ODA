@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
+import { BACKEND_URL } from '../utils/config';
 
 function Explore() {
   const [listings, setListings] = useState([]);
@@ -10,7 +11,7 @@ function Explore() {
   useEffect(() => {
     const fetchListings = async () => {
       try {
-        const response = await fetch("http://localhost:8000/api/listing");
+        const response = await fetch(`${BACKEND_URL}/api/listing`);
         const data = await response.json();
 
         if (!response.ok) throw new Error(data.error || "Failed to fetch listings");

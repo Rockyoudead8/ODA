@@ -7,6 +7,7 @@ import "@fontsource/great-vibes";
 import "@fontsource/inter/400.css";
 import "@fontsource/inter/500.css";
 import "@fontsource/playfair-display";
+import { BACKEND_URL } from '../utils/config';
 
 function Hero() {
   const [listings, setListings] = useState([]);
@@ -22,7 +23,7 @@ function Hero() {
   useEffect(() => {
     const fetchListings = async () => {
       try {
-        const response = await fetch("http://localhost:8000/api/listing");
+        const response = await fetch(`${BACKEND_URL}/api/listing`);
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || "Failed to fetch listings");
         setListings(data);

@@ -2,9 +2,10 @@ import React, { useEffect, useState, useRef, useContext } from "react";
 import { socket } from "../utils/socket";
 import { UserContext } from "../UserContext";
 import { Search, Plus, Send, Users, X, Check, Image, LogOut, Loader2 } from "lucide-react";
+import { BACKEND_URL } from '../utils/config';
 
-const API       = "http://localhost:8000/api/messages";
-const GROUP_API = "http://localhost:8000/api/groups";
+const API       = `${BACKEND_URL}/api/messages`;
+const GROUP_API = `${BACKEND_URL}/api/groups`;
 
 function Avatar({ name, photoUrl, size = "md", gradient = "from-violet-600 to-indigo-600" }) {
   const sz = size === "sm" ? "w-8 h-8 text-xs" : size === "lg" ? "w-12 h-12 text-base" : "w-9 h-9 text-sm";

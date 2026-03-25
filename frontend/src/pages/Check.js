@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { MapPin, ArrowRight, Search, CheckCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { BACKEND_URL } from '../utils/config';
 
 const CITIES = [
   'New York', 'London', 'Paris', 'Tokyo', 'Sydney', 'Rome', 'Berlin',
@@ -33,7 +34,7 @@ const Check = () => {
     if (city) {
       try {
         setLoading(true);
-        const res = await fetch(`http://localhost:8000/api/cities/${encodeURIComponent(city)}`);
+        const res = await fetch(`${BACKEND_URL}/api/cities/${encodeURIComponent(city)}`);
         if (!res.ok) throw new Error("City not found");
         const data = await res.json();
 

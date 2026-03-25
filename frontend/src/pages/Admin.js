@@ -17,6 +17,7 @@ import AdminOverview  from "../components/Admin/AdminOverview";
 import AdminAnalytics from "../components/Admin/AdminAnalytics";
 import AdminProfile   from "../components/Admin/AdminProfile";
 import AdminActivity  from "../components/Admin/AdminActivity";
+import { BACKEND_URL } from '../utils/config';
 
 ChartJS.register(LineElement, BarElement, CategoryScale, LinearScale, PointElement, Tooltip, Legend);
 
@@ -57,9 +58,9 @@ const Admin = () => {
     const fetchInitialData = async () => {
       try {
         const [userRes, quizRes, cityRes] = await Promise.all([
-          fetch("http://localhost:8000/api/auth/get_user",          { credentials: "include" }),
-          fetch("http://localhost:8000/api/submit_quiz/get_quiz",   { credentials: "include" }),
-          fetch("http://localhost:8000/api/city-points/my-stats",   { credentials: "include" }),
+          fetch(`${BACKEND_URL}/api/auth/get_user`,          { credentials: "include" }),
+          fetch(`${BACKEND_URL}/api/submit_quiz/get_quiz`,   { credentials: "include" }),
+          fetch(`${BACKEND_URL}/api/city-points/my-stats`,   { credentials: "include" }),
         ]);
 
         const userData = await userRes.json();
@@ -97,7 +98,7 @@ const Admin = () => {
   // ── Geocode visited cities (POST /api/geocode-cities) ─────────────────────
   useEffect(() => {
     if (!userData?.visitedCities?.length) return;
-    fetch("http://localhost:8000/api/geocode-cities", {
+    fetch(`${BACKEND_URL}/api/geocode-cities`, {
       method: "POST", credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ cities: userData.visitedCities }),
@@ -114,8 +115,8 @@ const Admin = () => {
       setActivityLoading(true);
       try {
         const [postsRes, commentsRes] = await Promise.all([
-          fetch("http://localhost:8000/api/community/my-posts",    { credentials: "include" }),
-          fetch("http://localhost:8000/api/community/my-comments", { credentials: "include" }),
+          fetch(`${BACKEND_URL}/api/community/my-posts`,    { credentials: "include" }),
+          fetch(`${BACKEND_URL}/api/community/my-comments`, { credentials: "include" }),
         ]);
         setUserPosts(postsRes.ok     ? await postsRes.json()    : []);
         setMyCommentsList(commentsRes.ok ? await commentsRes.json() : []);
@@ -153,7 +154,7 @@ const Admin = () => {
     try {
       const formData = new FormData();
       formData.append("photo", file);
-      const res  = await fetch("http://localhost:8000/api/auth/upload-photo", {
+      const res  = await fetch(`${BACKEND_URL}/api/auth/upload-photo`, {
         method: "POST", body: formData, credentials: "include",
       });
       const data = await res.json();
@@ -168,7 +169,7 @@ const Admin = () => {
   const handleSaveProfile = async () => {
     setProfileSaving(true);
     try {
-      const res  = await fetch("http://localhost:8000/api/auth/update-profile", {
+      const res  = await fetch(`${BACKEND_URL}/api/auth/update-profile`, {
         method: "PUT", credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(editForm),
@@ -193,7 +194,7 @@ const Admin = () => {
     if (!window.confirm("Delete this post permanently?")) return;
     setDeletingPostId(postId);
     try {
-      await fetch(`http://localhost:8000/api/community/${postId}`, {
+      await fetch(`${BACKEND_URL}/api/community/${postId}`, {
         method: "DELETE", credentials: "include",
       });
       setUserPosts(prev => prev.filter(p => p._id?.toString() !== postId.toString()));
@@ -205,7 +206,7 @@ const Admin = () => {
     const key = `${postId}-${commentId}`;
     setDeletingCommentKey(key);
     try {
-      await fetch(`http://localhost:8000/api/community/${postId}/comment/${commentId}`, {
+      await fetch(`${BACKEND_URL}/api/community/${postId}/comment/${commentId}`, {
         method: "DELETE", credentials: "include",
       });
       setUserPosts(prev => prev.map(p => {

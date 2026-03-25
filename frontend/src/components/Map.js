@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from "react";
 import Map, { Marker } from "react-map-gl/mapbox";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { BarChart3 } from "lucide-react";
+import { BACKEND_URL } from '../utils/config';
 
 const MAPBOX_TOKEN = process.env.REACT_APP_MAPBOX_API;
 
@@ -45,7 +46,7 @@ function MapView() {
   useEffect(() => {
     const fetchCities = async () => {
       try {
-        const response = await fetch("http://localhost:8000/api/listing");
+        const response = await fetch(`${BACKEND_URL}/api/listing`);
         const data = await response.json();
         const listings = Array.isArray(data) ? data : data.listings || [];
 
@@ -53,7 +54,7 @@ function MapView() {
           listings.map(async (listing) => {
             try {
               const res = await fetch(
-                `http://localhost:8000/api/get_visits?cityName=${encodeURIComponent(listing.title)}`
+                `${BACKEND_URL}/api/get_visits?cityName=${encodeURIComponent(listing.title)}`
               );
               const visitData = await res.json();
               return { name: listing.title, visits: visitData.userCount || 0, lat: listing.lat, lng: listing.lng };

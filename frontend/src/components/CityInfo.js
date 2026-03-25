@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { BACKEND_URL } from '../utils/config';
 import {
   Sparkles, BookOpen, Zap, HelpCircle,
   CheckCircle2, XCircle, ChevronDown, ChevronUp, Loader2,
@@ -32,7 +33,7 @@ function CityInfo({ city }) {
       setUserAnswers({});
     }
     try {
-      const res = await fetch("http://localhost:8000/api/generate_info", {
+      const res = await fetch(`${BACKEND_URL}/api/generate_info`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ city, force_new: forceNew }),
@@ -98,7 +99,7 @@ function CityInfo({ city }) {
         correctAnswers: data.quiz.map(q => Number(q.correctAnswerIndex)),
       };
 
-      const res = await fetch("http://localhost:8000/api/submit_quiz", {
+      const res = await fetch(`${BACKEND_URL}/api/submit_quiz`, {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },

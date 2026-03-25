@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Clock, MapPin, Loader2, AlertTriangle } from 'lucide-react';
+import { BACKEND_URL } from '../utils/config';
 
 function Timeline({ city }) {
   const [timeline, setTimeline] = useState([]);
@@ -16,7 +17,7 @@ function Timeline({ city }) {
 
       try {
         
-        const res = await fetch("http://localhost:8000/api/generate_info", {
+        const res = await fetch(`${BACKEND_URL}/api/generate_info`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ city }),

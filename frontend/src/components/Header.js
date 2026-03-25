@@ -2,6 +2,7 @@ import React, { useState, useContext } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { UserContext } from "../UserContext";
 import { User, LogIn, UserPlus, MapPin, Menu, X, LogOut, MessageCircle, Users } from "lucide-react";
+import { BACKEND_URL } from '../utils/config';
 
 function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -10,7 +11,7 @@ function Header() {
 
   const handleLogout = async () => {
     try {
-      const response = await fetch("http://localhost:8000/api/auth/logout", {
+      const response = await fetch(`${BACKEND_URL}/api/auth/logout`, {
         method: "GET",
         credentials: "include",
       });

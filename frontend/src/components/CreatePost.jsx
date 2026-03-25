@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { ImagePlus, X, ChevronDown } from "lucide-react";
+import { BACKEND_URL } from '../utils/config';
 
 function CreatePost({ refreshFeed, setShowModal }) {
   const [city,           setCity]           = useState("");
@@ -23,7 +24,7 @@ function CreatePost({ refreshFeed, setShowModal }) {
 
   /* ── Fetch all DB cities once on mount ─────────────────────────────────── */
   useEffect(() => {
-    fetch("http://localhost:8000/api/listing", { credentials: "include" })
+    fetch(`${BACKEND_URL}/api/listing`, { credentials: "include" })
       .then(r => r.json())
       .then(data => {
         if (Array.isArray(data)) {
@@ -85,7 +86,7 @@ function CreatePost({ refreshFeed, setShowModal }) {
     if (imageFile) formData.append("image", imageFile);
 
     try {
-      await fetch("http://localhost:8000/api/community/create", {
+      await fetch(`${BACKEND_URL}/api/community/create`, {
         credentials: "include",
         method: "POST",
         body: formData,

@@ -2,6 +2,7 @@ import React, { useState, useContext } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { MapPin, CheckCircle, Eye, EyeOff, Mail, User, Lock, KeyRound } from "lucide-react";
 import { UserContext } from "../UserContext";
+import { BACKEND_URL } from '../utils/config';
 
 function SignupPage() {
   const [step, setStep] = useState(1);
@@ -19,7 +20,7 @@ function SignupPage() {
   const { setUser } = useContext(UserContext);
 
   const handleGoogleLogin = () => {
-    window.location.href = "http://localhost:8000/api/auth/google";
+    window.location.href = `${BACKEND_URL}/api/auth/google`;
   };
 
   const handleSignup = async (e) => {
@@ -28,7 +29,7 @@ function SignupPage() {
     if (password !== confirmPassword) { setError("Passwords do not match!"); return; }
     setLoading(true);
     try {
-      const response = await fetch("http://localhost:8000/api/auth/send-otp", {
+      const response = await fetch(`${BACKEND_URL}/api/auth/send-otp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, email, password }),
@@ -45,7 +46,7 @@ function SignupPage() {
     setError(""); setSuccess("");
     setLoading(true);
     try {
-      const response = await fetch("http://localhost:8000/api/auth/verify-otp", {
+      const response = await fetch(`${BACKEND_URL}/api/auth/verify-otp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

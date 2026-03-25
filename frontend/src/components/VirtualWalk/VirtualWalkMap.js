@@ -2,6 +2,7 @@ import Map, { Marker, Popup, Source, Layer } from "react-map-gl/mapbox";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { useEffect, useState } from "react";
 import { MapPin, Navigation } from "lucide-react";
+import { BACKEND_URL } from '../../utils/config';
 
 const MAPBOX_TOKEN = process.env.REACT_APP_MAPBOX_API;
 
@@ -68,7 +69,7 @@ function VirtualWalkMap({ city }) {
   };
 
   const fetchPlaces = async (city, lat, lng) => {
-    const res = await fetch(`http://localhost:8000/api/places/${city}/${lat}/${lng}`);
+    const res = await fetch(`${BACKEND_URL}/api/places/${city}/${lat}/${lng}`);
     const data = await res.json();
     setPlaces(Array.isArray(data) ? data.slice(0, 10) : []);
   };

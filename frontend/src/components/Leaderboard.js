@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { BACKEND_URL } from '../utils/config';
 import {
   Trophy, Loader2, Star, MessageCircle,
   FileText, ChevronDown, Zap, BarChart2,
@@ -43,7 +44,7 @@ const Leaderboard = ({ listingId }) => {
     if (!listingId) return;
     setLoading(true);
     setError(null);
-    fetch(`http://localhost:8000/api/city-points/leaderboard/${listingId}`)
+    fetch(`${BACKEND_URL}/api/city-points/leaderboard/${listingId}`)
       .then(r => r.json())
       .then(data => { if (data.error) throw new Error(data.error); setLeaderboard(data); })
       .catch(err => setError(err.message))

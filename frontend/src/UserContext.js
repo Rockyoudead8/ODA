@@ -1,4 +1,5 @@
 import React, { createContext, useState, useEffect } from "react";
+import { BACKEND_URL } from './utils/config';
 
 export const UserContext = createContext();
 
@@ -8,7 +9,7 @@ export const UserProvider = ({ children }) => {
 
   const checkStatus = async () => {
     try {
-      const res = await fetch("http://localhost:8000/api/auth/status", {
+      const res = await fetch(`${BACKEND_URL}/api/auth/status`, {
         method: "GET",
         credentials: "include",
         cache: "no-store",
