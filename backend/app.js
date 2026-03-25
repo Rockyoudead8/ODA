@@ -1,166 +1,205 @@
-require('dotenv').config();
-var createError = require('http-errors');
 var express = require('express');
-var path = require('path');
-var cookieParser = require('cookie-parser');
-var logger = require('morgan');
-var session = require("express-session");
-var indexRouter = require('./routes/index');
-var infoRouter = require('./routes/GenerateInfo');
-var submitRouter = require('./routes/submitQuiz');
-var usersRouter = require('./routes/users');
-var uploadRoutes = require('./routes/upload');
-var commentsRoute = require('./routes/comments');
-var communityRoutes = require('./routes/community');
-var geminiRoute = require('./routes/geminiRoute');
-var QuizRouter = require('./routes/QuizResult');
-const placesRoutes = require("./routes/places");
-const sendOTPRouter = require("./routes/sendOTP");
-const MessageRouter = require("./routes/message.route.js");
-const GroupRouter = require("./routes/group_route.js");
-const cityPointsRouter = require("./routes/cityPoints");
+var router = express.Router();
+const bcrypt = require("bcrypt");
+const user = require("../models/users");
+const category = require("../models/category");
+const comment = require("../models/comment");
+const listings = require("../models/listings");
+const quiz = require("../models/quiz");
+const quizResult = require("../models/quizResult");
+const passport = require("passport");
+const localStrategy = require("passport-local");
+const c = require("../controllers/user");
+const jwt = require("jsonwebtoken");
 
-const generateSoundRoute = require('./routes/generateSound');
-var listingsRouter = require('./routes/listings');
-var passport = require("passport");
-var localStrategy = require("passport-local");
-const userModel = require("./models/users");
-const cors = require('cors');
-const GoogleStrategy = require("passport-google-oauth20").Strategy;
-const jwt_strategy = require("./config/passport");
-const {app, server} = require("./config/socket");
+// toggle visit
+router.post("/toggle-visit", passport.authenticate("jwt", { session: false }), async (req, res) => {
+  try {
 
-console.log("APP FILE STARTED");
+    const { listingId } = req.body;
+    const userId = req.user._id;
 
-// cors //
-app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-  credentials: true
-}));
+    const listing = await listings.findById(listingId);
+    if (!listing) return res.status(404).json({ error: "Listing not found" });
 
-const mongoose = require('mongoose');
+    const cityName = listing.title;
 
-const connectDB = () => {
-  mongoose.connect(process.env.MONGODB_URL, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true
-  })
-    .then(() => console.log('✅ MongoDB connected'))
-    .catch(err => console.error('❌ MongoDB error:', err.message));
-};
+    const foundUser = await user.findById(userId);
+    const alreadyVisited = foundUser.visitedCities.includes(cityName);
 
-// view engine setup
-app.set('views', path.join(__dirname, 'views'));
-app.set('view engine', 'ejs');
+    if (alreadyVisited) {
+      foundUser.visitedCities = foundUser.visitedCities.filter(
+        (city) => city !== cityName
+      );
+    } else {
+      foundUser.visitedCities.push(cityName);
+    }
 
-// body parser middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
-app.use(cookieParser());
-app.use(express.static(path.join(__dirname, 'public')));
+    foundUser.citiesVisited = foundUser.visitedCities.length;
+
+    await foundUser.save();
+
+    res.json({
+      visited: !alreadyVisited
+    });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Server error" });
+  }
+});
 
 
-// Passport config
-app.use(passport.initialize());
+// check if user visited city
+router.get("/check-visit", passport.authenticate("jwt", { session: false }), async (req, res) => {
+  const { cityName } = req.query;
 
-passport.use(userModel.createStrategy()); // Local strategy (handled by passport-local-mongoose)
+  const foundUser = await user.findById(req.user._id);
 
-jwt_strategy(passport); // JWT strategy for protected routes
+  const visited = foundUser.visitedCities.includes(cityName);
 
-passport.use(new GoogleStrategy({
-  clientID: process.env.GOOGLE_CLIENT_ID,
-  clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-  callbackURL: process.env.GOOGLE_CALLBACK_URL,
-},
+  res.json({ visited });
+});
 
-  async function (accessToken, refreshToken, profile, done) {
-    try {
-      const email = profile.emails[0].value;
 
-      let user = await userModel.findOne({
-        $or: [
-          { googleId: profile.id },
-          { email: email }
-        ]
-      });
+// count users who visited city
+router.get("/get_visits", async (req, res) => {
+  try {
+
+    const { cityName } = req.query;
+
+    const count = await user.countDocuments({ visitedCities: cityName });
+
+    res.json({ cityName, userCount: count });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+// update profile (name, bio, defaultCity)
+router.put("/update-profile", passport.authenticate("jwt", { session: false }), async (req, res) => {
+  try {
+    const { name, bio, defaultCity } = req.body;
+    const updates = {};
+    if (name?.trim()) updates.name = name.trim();
+    if (bio !== undefined) updates.bio = bio;
+    if (defaultCity !== undefined) updates.defaultCity = defaultCity;
+    const updatedUser = await user.findByIdAndUpdate(req.user._id, { $set: updates }, { new: true });
+    res.json({ user: updatedUser });
+  } catch (err) {
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+// upload profile photo
+const multer = require("multer");
+const cloudinary = require("../config/cloudinary");
+const multerStorage = multer.memoryStorage();
+const photoUpload = multer({ storage: multerStorage });
+
+router.post("/upload-photo", passport.authenticate("jwt", { session: false }), photoUpload.single("photo"), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: "No file uploaded" });
+    const uploadStream = cloudinary.uploader.upload_stream(
+      { folder: "profile_photos" },
+      async (error, result) => {
+        if (error) return res.status(500).json({ error: "Cloudinary upload failed" });
+        const updatedUser = await user.findByIdAndUpdate(req.user._id, { profilePhoto: result.secure_url }, { new: true });
+        res.json({ photoUrl: result.secure_url, user: updatedUser });
+      }
+    );
+    uploadStream.end(req.file.buffer);
+  } catch (err) {
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+// route to get user info
+router.get("/get_user", passport.authenticate("jwt", { session: false }), c.handleGetUser);
+
+// login route
+router.post('/login', c.handleLogin);
+
+// signup route
+router.post('/verify-otp', c.handleSignup);
+
+// logout route 
+router.get("/logout", c.handleLogout);
+
+// new code for status
+router.get("/status", passport.authenticate("jwt", { session: false }), (req, res) => {
+
+  // Disable browser & proxy caching completely
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+  res.set('Pragma', 'no-cache');
+  res.set('Expires', '0');
+
+  return res.status(200).json({
+    message: "User is logged in",
+    user: req.user,
+  });
+
+});
+
+router.get("/", async (req, res) => {
+  try {
+    const { cityName } = req.query;
+    if (!cityName) return res.status(400).json({ error: "cityName is required" });
+
+    const count = await user.countDocuments({ visitedCities: cityName });
+    res.json({ cityName, userCount: count });
+  } catch (err) {
+    console.error("Error:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+
+//redirects the user to google oauth 
+router.get('/google', passport.authenticate("google", { scope: ["profile", "email"], session: false }));
+
+router.get("/google/callback", (req, res, next) => {
+  try {
+    passport.authenticate("google", { session: false }, (err, user, info) => {
+
+      if (err) {
+        console.log("Error with server:", err.message);
+        return res.redirect(`${process.env.FRONTEND_URL}/?error=server`);
+      }
 
       if (!user) {
-        // username field is required by passport-local-mongoose (mapped to email)
-        const newUser = new userModel({
-          googleId: profile.id,
-          email: email,
-          username: email,
-          name: profile.displayName,
-        });
-
-        await newUser.save();
-        console.log("New Google user created:", email);
-        return done(null, newUser);
-      } else {
-        if (!user.googleId) {
-          user.googleId = profile.id;
-          await user.save();
-        }
-        console.log("Existing Google user logged in:", email);
-        return done(null, user);
+        console.log("Google login failed");
+        return res.redirect(`${process.env.FRONTEND_URL}/?error=auth_failed`);
       }
-    }
-    catch (err) {
-      console.log("Google strategy error:", err.message);
-      return done(err, null);
-    }
+
+      const payload = {
+        id: user._id,
+      }
+
+      const token = jwt.sign(
+        payload,
+        process.env.JWT_SECRET,
+      );
+
+      console.log("Google login/signup successful");
+
+      // store JWT in cookie
+      res.cookie("jwt", token, {
+        httpOnly: true,
+        secure: true,
+        sameSite: "None"
+      });
+
+      // Redirect to frontend Hero page
+      res.redirect(`${process.env.FRONTEND_URL}/Hero`);
+
+    })(req, res, next);
+  } catch (err) {
+    console.error(err);
+    res.redirect(`${process.env.FRONTEND_URL}/?error=exception`);
   }
-
-));
-
-
-//logger
-app.use(logger('dev'));
-
-// routes
-app.use('/', indexRouter);
-
-app.use('/api/', listingsRouter);
-app.use('/api/auth', usersRouter); // user auth routes
-app.use('/api', usersRouter); // for visit tracking routes like toggle-visit and check-visit
-app.use("/api/auth/send-otp", sendOTPRouter);
-
-app.use('/api/generate-sound', generateSoundRoute);
-app.use('/api', commentsRoute);
-app.use('/api/generate_info', infoRouter);
-app.use('/api/submit_quiz', submitRouter);
-app.use("/api/upload", uploadRoutes);
-app.use('/api/leaderboard', QuizRouter);
-app.use('/api/geocode-cities', geminiRoute);
-
-// for the community page
-app.use("/api/community", communityRoutes);
-
-// for fetching places from geoapify and caching them in MongoDB
-app.use("/api/places", placesRoutes);
-
-app.use("/api/messages", MessageRouter);
-app.use("/api/groups", GroupRouter);
-
-// city-based points system (quiz + comments + posts)
-app.use("/api/city-points", cityPointsRouter);
-
-// catch 404 and forward to error handler
-app.use(function (req, res, next) {
-  next(createError(404));
 });
 
-// error handler — return JSON to avoid missing EJS view crash
-app.use(function (err, req, res, next) {
-  res.status(err.status || 500);
-  res.json({
-    error: err.message || 'Internal Server Error'
-  });
-});
-
-server.listen(8000, () => {
-  console.log("Server started on port 8000");
-  connectDB();
-});
-
-module.exports = app;
+module.exports = router;
