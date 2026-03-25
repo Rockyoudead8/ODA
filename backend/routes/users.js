@@ -165,7 +165,7 @@ router.get("/google/callback", (req, res, next) => {
     passport.authenticate("google", { session: false }, (err, user, info) => {
 
       if (err) {
-        console.log("Error with server");
+        console.log("Error with server:", err.message);
         return res.redirect(`${process.env.FRONTEND_URL}/?error=server`);
       }
 
@@ -188,8 +188,8 @@ router.get("/google/callback", (req, res, next) => {
       // store JWT in cookie
       res.cookie("jwt", token, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax"
+        secure: true,
+        sameSite: "None"
       });
 
       // Redirect to frontend Hero page
