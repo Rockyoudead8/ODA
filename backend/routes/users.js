@@ -166,12 +166,12 @@ router.get("/google/callback", (req, res, next) => {
 
       if (err) {
         console.log("Error with server");
-        return res.redirect(`${process.env.FRONTEND_URL}/login?error=server`);
+        return res.redirect(`${process.env.FRONTEND_URL}/?error=server`);
       }
 
       if (!user) {
         console.log("Google login failed");
-        return res.redirect(`${process.env.FRONTEND_URL}/login?error=auth_failed`);
+        return res.redirect(`${process.env.FRONTEND_URL}/?error=auth_failed`);
       }
 
       const payload = {
@@ -192,13 +192,13 @@ router.get("/google/callback", (req, res, next) => {
         sameSite: process.env.NODE_ENV === "production" ? "none" : "lax"
       });
 
-      // Redirect to frontend
+      // Redirect to frontend Hero page
       res.redirect(`${process.env.FRONTEND_URL}/Hero`);
 
     })(req, res, next);
   } catch (err) {
     console.error(err);
-    res.redirect(`${process.env.FRONTEND_URL}/login?error=exception`);
+    res.redirect(`${process.env.FRONTEND_URL}/?error=exception`);
   }
 });
 
