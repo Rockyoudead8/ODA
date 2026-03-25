@@ -74,40 +74,41 @@ passport.use(new GoogleStrategy({
 },
 
   async function (accessToken, refreshToken, profile, done) {
-
     try {
+      const email = profile.emails[0].value;
+
       let user = await userModel.findOne({
         $or: [
           { googleId: profile.id },
-          { email: profile.emails[0].value }
+          { email: email }
         ]
       });
 
-
       if (!user) {
-        console.log(profile);
+        // username field is required by passport-local-mongoose (mapped to email)
         const newUser = new userModel({
           googleId: profile.id,
-          email: profile.emails[0].value,
+          email: email,
+          username: email,
           name: profile.displayName,
-        })
+        });
 
         await newUser.save();
+        console.log("New Google user created:", email);
         return done(null, newUser);
-      }
-      else {
+      } else {
         if (!user.googleId) {
           user.googleId = profile.id;
           await user.save();
         }
+        console.log("Existing Google user logged in:", email);
         return done(null, user);
       }
     }
     catch (err) {
-      console.log("error occured");
+      console.log("Google strategy error:", err.message);
       return done(err, null);
     }
-
   }
 
 ));
@@ -149,13 +150,12 @@ app.use(function (req, res, next) {
   next(createError(404));
 });
 
-// error handler
+// error handler — return JSON to avoid missing EJS view crash
 app.use(function (err, req, res, next) {
-  res.locals.message = err.message;
-  res.locals.error = req.app.get('env') === 'development' ? err : {};
-
   res.status(err.status || 500);
-  res.render('error');
+  res.json({
+    error: err.message || 'Internal Server Error'
+  });
 });
 
 server.listen(8000, () => {
