@@ -67,7 +67,6 @@ const Admin = () => {
         const quizData = await quizRes.json();
         const cityData = await cityRes.json();
 
-        // get_user returns { user: {...} } — extract the inner user object
         if (userRes.ok) setUserData(userData.user ?? userData);
         else { setError(userData.error || "Could not load user."); return; }
 
@@ -84,7 +83,6 @@ const Admin = () => {
     fetchInitialData();
   }, []);
 
-  // ── Sync edit form once userData is ready ─────────────────────────────────
   useEffect(() => {
     if (userData) {
       setEditForm({
@@ -95,7 +93,6 @@ const Admin = () => {
     }
   }, [userData]);
 
-  // ── Geocode visited cities (POST /api/geocode-cities) ─────────────────────
   useEffect(() => {
     if (!userData?.visitedCities?.length) return;
     fetch(`${BACKEND_URL}/api/geocode-cities`, {
@@ -108,7 +105,6 @@ const Admin = () => {
       .catch(console.error);
   }, [userData]);
 
-  // ── Activity tab data ─────────────────────────────────────────────────────
   useEffect(() => {
     if (activeTab !== "activity") return;
     const fetchActivity = async () => {
@@ -286,7 +282,7 @@ const Admin = () => {
   );
 
   if (error || !userData) return (
-    <div className="min-h-screen bg-zinc-900 flex items-center justify-center">
+    <div className="min-h-screen bg-zinc-900 flex items-center justify-center px-4">
       <div className="flex items-center gap-2 bg-red-900/30 text-red-300 border border-red-800/50 rounded-xl px-5 py-3 text-sm font-medium">
         <X size={16} />{error || "Could not load profile."}
       </div>
@@ -379,12 +375,68 @@ const Admin = () => {
       </div>
 
       {/* ── Main ── */}
-      <main className="flex-1 min-w-0 px-4 sm:px-5 py-5 lg:px-8">
+      <main className="flex-1 min-w-0 px-3 sm:px-5 py-4 lg:px-8">
+
+        {/* ── Mobile profile card (hidden on desktop) ── */}
+        <div className="md:hidden mb-4">
+          <div className="bg-zinc-800/60 border border-zinc-700/60 rounded-2xl overflow-hidden">
+            <div className="h-14 bg-gradient-to-r from-violet-900 to-pink-900/60" />
+            <div className="px-4 pb-4">
+              <div className="flex items-end gap-3 -mt-7 mb-3">
+                <div className="relative">
+                  <Avatar user={userData} size="lg" className="border-4 border-zinc-800 shadow-lg" />
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full bg-violet-600 hover:bg-violet-500 flex items-center justify-center transition-colors shadow-lg border-2 border-zinc-800"
+                  >
+                    {photoUploading
+                      ? <Loader2 size={9} className="animate-spin text-white" />
+                      : <Camera size={9} className="text-white" />}
+                  </button>
+                </div>
+                <div className="pb-1 min-w-0 flex-1">
+                  <p className="text-sm font-bold text-zinc-100 truncate">{userData.name}</p>
+                  <p className="text-[10px] text-zinc-500 truncate">{userData.email}</p>
+                </div>
+                <div className="pb-1 shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border"
+                  style={{ background: overallBadge.bg, borderColor: `${overallBadge.color}40` }}>
+                  <span className="text-base">{overallBadge.emoji}</span>
+                  <div>
+                    <p className="text-[10px] font-bold leading-none" style={{ color: overallBadge.color }}>{overallBadge.label}</p>
+                    <p className="text-[9px] mt-0.5" style={{ color: overallBadge.color }}>{cityStats.overallTotal} pts</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Mobile stats row */}
+              <div className="grid grid-cols-4 gap-2 mb-3">
+                {[
+                  { label: "Cities",  val: userData.citiesVisited || 0 },
+                  { label: "Quizzes", val: totalQuizzes },
+                  { label: "Avg",     val: `${overallAvgScore}%` },
+                  { label: "Points",  val: cityStats.overallTotal },
+                ].map(({ label, val }) => (
+                  <div key={label} className="text-center bg-zinc-700/30 rounded-lg py-2">
+                    <p className="text-sm font-bold text-zinc-100">{val}</p>
+                    <p className="text-[9px] text-zinc-500 mt-0.5">{label}</p>
+                  </div>
+                ))}
+              </div>
+
+              <button
+                onClick={() => setIsUploadModalOpen(true)}
+                className="flex items-center justify-center gap-2 w-full py-2 bg-violet-700 hover:bg-violet-600 text-white text-xs font-semibold rounded-lg transition-colors"
+              >
+                <UploadCloud size={12} /> Suggest a City
+              </button>
+            </div>
+          </div>
+        </div>
 
         {/* Top bar */}
-        <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
           <div>
-            <h1 className="text-xl font-bold text-zinc-100">Hey, {userData.name?.split(" ")[0] || "Explorer"} 👋</h1>
+            <h1 className="text-lg sm:text-xl font-bold text-zinc-100">Hey, {userData.name?.split(" ")[0] || "Explorer"} 👋</h1>
             <p className="text-xs text-zinc-500 mt-1">Here's what's happening with your travels</p>
           </div>
 
@@ -399,15 +451,23 @@ const Admin = () => {
             ))}
           </div>
 
-          {/* Mobile tab select */}
+          {/* Mobile tab — scrollable pill buttons */}
           <div className="md:hidden w-full">
-            <select
-              value={activeTab}
-              onChange={e => setActiveTab(e.target.value)}
-              className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-xl text-sm text-zinc-200 outline-none focus:border-violet-500"
-            >
-              {tabs.map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
-            </select>
+            <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+              {tabs.map(t => (
+                <button
+                  key={t.id}
+                  onClick={() => setActiveTab(t.id)}
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium whitespace-nowrap shrink-0 transition-all border ${
+                    activeTab === t.id
+                      ? "bg-violet-700 text-white border-violet-600"
+                      : "bg-zinc-800 text-zinc-400 border-zinc-700 hover:text-zinc-200"
+                  }`}
+                >
+                  {t.icon}{t.label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -441,7 +501,7 @@ const Admin = () => {
 
           {activeTab === "map" && (
             <motion.div key="map" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
-              <div className="bg-zinc-800/60 border border-zinc-700/60 rounded-2xl p-5">
+              <div className="bg-zinc-800/60 border border-zinc-700/60 rounded-2xl p-4 sm:p-5">
                 <div className="flex items-center gap-2 mb-4">
                   <Globe size={15} className="text-zinc-400" />
                   <h2 className="text-sm font-semibold text-zinc-200">Explorer's Map</h2>
@@ -458,7 +518,7 @@ const Admin = () => {
                     ))}
                   </div>
                 )}
-                <div className="rounded-xl overflow-hidden" style={{ minHeight: "460px" }}>
+                <div className="rounded-xl overflow-hidden">
                   <UserVisitedMap visitedCities={visitedCitiesWithCoords} />
                 </div>
               </div>

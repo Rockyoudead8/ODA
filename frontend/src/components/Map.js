@@ -12,6 +12,7 @@ function MapView() {
   const [activeCity, setActiveCity] = useState(null);
   const mapRef = useRef(null);
   const interactionTimeout = useRef(null);
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 640);
 
   const [viewState, setViewState] = useState({
     longitude: 0,
@@ -21,6 +22,13 @@ function MapView() {
   });
 
   const [userInteracting, setUserInteracting] = useState(false);
+
+  // Track screen size
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth < 640);
+    window.addEventListener("resize", handler);
+    return () => window.removeEventListener("resize", handler);
+  }, []);
 
   // Auto rotation
   useEffect(() => {
@@ -75,7 +83,6 @@ function MapView() {
     fetchCities();
   }, []);
 
-  // Fixed flyToCity using mapRef.flyTo
   const flyToCity = (city) => {
     setActiveCity(city.name);
     setUserInteracting(true);
@@ -88,7 +95,6 @@ function MapView() {
         essential: true,
       });
     } else {
-      // fallback if ref not ready
       setViewState((prev) => ({
         ...prev,
         longitude: city.lng,
@@ -106,7 +112,6 @@ function MapView() {
       style={{
         position: "relative",
         width: "100%",
-        minHeight: "420px",
         borderRadius: "16px",
         overflow: "hidden",
         background: "rgba(10,8,20,0.95)",
@@ -115,9 +120,16 @@ function MapView() {
         flexDirection: "column",
       }}
     >
-      <div style={{ display: "flex", flex: 1, flexDirection: "row", gap: 0, minHeight: "420px" }}>
+      <div
+        style={{
+          display: "flex",
+          flex: 1,
+          flexDirection: isMobile ? "column" : "row",
+          gap: 0,
+        }}
+      >
         {/* MAP */}
-        <div style={{ flex: 1, minHeight: "300px", position: "relative" }}>
+        <div style={{ flex: 1, minHeight: isMobile ? "260px" : "420px", position: "relative" }}>
           <Map
             ref={mapRef}
             {...viewState}
@@ -163,14 +175,15 @@ function MapView() {
           </Map>
         </div>
 
-        {/* SIDEBAR */}
+        {/* SIDEBAR — row on desktop, horizontal strip on mobile */}
         <div
           style={{
-            width: "220px",
+            width: isMobile ? "100%" : "220px",
             flexShrink: 0,
             background: "rgba(15,10,30,0.9)",
-            borderLeft: "1px solid rgba(139,92,246,0.15)",
-            padding: "20px 16px",
+            borderLeft: isMobile ? "none" : "1px solid rgba(139,92,246,0.15)",
+            borderTop: isMobile ? "1px solid rgba(139,92,246,0.15)" : "none",
+            padding: isMobile ? "12px 14px" : "20px 16px",
             display: "flex",
             flexDirection: "column",
           }}
@@ -180,7 +193,7 @@ function MapView() {
               fontSize: "0.85rem", fontWeight: 700, color: "#a78bfa",
               display: "flex", alignItems: "center", gap: "6px",
               borderBottom: "1px solid rgba(139,92,246,0.15)",
-              paddingBottom: "10px", marginBottom: "14px", margin: "0 0 14px",
+              paddingBottom: "10px", margin: "0 0 12px",
             }}
           >
             <BarChart3 style={{ width: "16px", height: "16px" }} />
@@ -190,19 +203,33 @@ function MapView() {
           {loading ? (
             <p style={{ color: "#475569", fontSize: "0.8rem", fontStyle: "italic" }}>Loading...</p>
           ) : topCities.length > 0 ? (
-            <ol style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "8px" }}>
+            <ol
+              style={{
+                listStyle: "none", padding: 0, margin: 0,
+                display: "flex",
+                flexDirection: isMobile ? "row" : "column",
+                gap: "8px",
+                overflowX: isMobile ? "auto" : "visible",
+              }}
+            >
               {topCities.map((city, index) => (
                 <li
                   key={city.name}
                   onClick={() => flyToCity(city)}
                   style={{
-                    display: "flex", justifyContent: "space-between", alignItems: "center",
-                    padding: "10px 12px", borderRadius: "10px", cursor: "pointer",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    padding: "10px 12px",
+                    borderRadius: "10px",
+                    cursor: "pointer",
                     background: activeCity === city.name
                       ? "rgba(139,92,246,0.2)"
                       : "rgba(139,92,246,0.07)",
                     border: `1px solid ${activeCity === city.name ? "rgba(167,139,250,0.4)" : "rgba(139,92,246,0.12)"}`,
                     transition: "all 0.2s",
+                    flexShrink: isMobile ? 0 : undefined,
+                    minWidth: isMobile ? "140px" : undefined,
                   }}
                   onMouseEnter={(e) => {
                     if (activeCity !== city.name) {
@@ -223,7 +250,7 @@ function MapView() {
                     </span>
                     {city.name}
                   </span>
-                  <span style={{ color: "#7c3aed", fontSize: "0.78rem", fontWeight: 600 }}>{city.visits}</span>
+                  <span style={{ color: "#7c3aed", fontSize: "0.78rem", fontWeight: 600, marginLeft: "8px" }}>{city.visits}</span>
                 </li>
               ))}
             </ol>

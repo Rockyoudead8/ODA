@@ -9,6 +9,7 @@ const UserVisitedMap = ({ visitedCities = [] }) => {
   const mapRef = useRef(null);
   const interactionTimeout = useRef(null);
   const [activeCity, setActiveCity] = useState(null);
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 640);
 
   const [viewState, setViewState] = useState({
     longitude: 0,
@@ -18,6 +19,13 @@ const UserVisitedMap = ({ visitedCities = [] }) => {
   });
 
   const [userInteracting, setUserInteracting] = useState(false);
+
+  // Track screen size
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth < 640);
+    window.addEventListener("resize", handler);
+    return () => window.removeEventListener("resize", handler);
+  }, []);
 
   // Auto rotation
   useEffect(() => {
@@ -39,7 +47,6 @@ const UserVisitedMap = ({ visitedCities = [] }) => {
     interactionTimeout.current = setTimeout(() => setUserInteracting(false), 5000);
   };
 
-  // Fixed: fly to city using mapRef.flyTo
   const flyToCity = (city) => {
     if (!city.lng || !city.lat) return;
     setActiveCity(city.name);
@@ -66,13 +73,12 @@ const UserVisitedMap = ({ visitedCities = [] }) => {
         borderRadius: "20px",
         boxShadow: "0 20px 60px rgba(0,0,0,0.5)",
         display: "flex",
-        flexDirection: "row",
-        height: "500px",
+        flexDirection: isMobile ? "column" : "row",
         overflow: "hidden",
       }}
     >
       {/* MAP */}
-      <div style={{ flex: 1, position: "relative", minWidth: 0 }}>
+      <div style={{ flex: 1, position: "relative", minWidth: 0, height: isMobile ? "260px" : "500px" }}>
         <Map
           ref={mapRef}
           {...viewState}
@@ -119,17 +125,19 @@ const UserVisitedMap = ({ visitedCities = [] }) => {
         </Map>
       </div>
 
-      {/* SIDEBAR */}
+      {/* SIDEBAR — vertical on desktop, horizontal scroll strip on mobile */}
       <div
         style={{
-          width: "220px",
+          width: isMobile ? "100%" : "220px",
           flexShrink: 0,
           background: "rgba(15,10,30,0.92)",
-          borderLeft: "1px solid rgba(139,92,246,0.15)",
-          padding: "20px 16px",
+          borderLeft: isMobile ? "none" : "1px solid rgba(139,92,246,0.15)",
+          borderTop: isMobile ? "1px solid rgba(139,92,246,0.15)" : "none",
+          padding: isMobile ? "12px 14px" : "20px 16px",
           display: "flex",
           flexDirection: "column",
-          overflowY: "auto",
+          overflowY: isMobile ? "visible" : "auto",
+          maxHeight: isMobile ? "none" : "500px",
         }}
       >
         <h3
@@ -137,7 +145,8 @@ const UserVisitedMap = ({ visitedCities = [] }) => {
             fontSize: "0.85rem", fontWeight: 700, color: "#ec4899",
             display: "flex", alignItems: "center", gap: "6px",
             borderBottom: "1px solid rgba(139,92,246,0.15)",
-            paddingBottom: "10px", margin: "0 0 14px",
+            paddingBottom: "10px", margin: "0 0 12px",
+            flexShrink: 0,
           }}
         >
           <MapPin style={{ width: "15px", height: "15px" }} />
@@ -145,7 +154,17 @@ const UserVisitedMap = ({ visitedCities = [] }) => {
         </h3>
 
         {visitedCities.length > 0 ? (
-          <ol style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "7px" }}>
+          <ol
+            style={{
+              listStyle: "none", padding: 0, margin: 0,
+              display: "flex",
+              flexDirection: isMobile ? "row" : "column",
+              gap: "7px",
+              overflowX: isMobile ? "auto" : "visible",
+              overflowY: isMobile ? "visible" : "auto",
+              paddingBottom: isMobile ? "4px" : 0,
+            }}
+          >
             {visitedCities.map((city, index) => (
               <li
                 key={index}
@@ -158,6 +177,9 @@ const UserVisitedMap = ({ visitedCities = [] }) => {
                     : "rgba(139,92,246,0.07)",
                   border: `1px solid ${activeCity === city.name ? "rgba(236,72,153,0.4)" : "rgba(139,92,246,0.12)"}`,
                   transition: "all 0.2s",
+                  flexShrink: isMobile ? 0 : undefined,
+                  minWidth: isMobile ? "130px" : undefined,
+                  whiteSpace: isMobile ? "nowrap" : undefined,
                 }}
                 onMouseEnter={(e) => {
                   if (activeCity !== city.name) {
@@ -185,7 +207,7 @@ const UserVisitedMap = ({ visitedCities = [] }) => {
             ))}
           </ol>
         ) : (
-          <p style={{ color: "#475569", fontSize: "0.8rem", fontStyle: "italic", textAlign: "center", marginTop: "40px" }}>
+          <p style={{ color: "#475569", fontSize: "0.8rem", fontStyle: "italic", textAlign: "center", marginTop: "20px" }}>
             No visited cities yet.
           </p>
         )}
