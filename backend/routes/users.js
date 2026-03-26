@@ -189,7 +189,7 @@ router.get("/google/callback", (req, res, next) => {
       res.cookie("jwt", token, {
         httpOnly: true,
         secure: true,
-        sameSite: "None"
+        sameSite: "none"
       });
 
       // Redirect to frontend Hero page
