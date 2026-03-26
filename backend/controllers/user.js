@@ -58,8 +58,8 @@ exports.handleLogin = (req, res) => {
 
       res.cookie("jwt",token,{
         httpOnly: true,
-        secure: false, // set to true in production with HTTPS
-        sameSite: "lax",
+        secure: true, // set to true in production with HTTPS
+        sameSite: "none",
       });
 
       return res.status(200).json({ message: "Login successful",user, token });
@@ -106,8 +106,8 @@ exports.handleSignup =  async (req, res) => {
 
     res.cookie("jwt",token,{
         httpOnly: true,
-        secure: false, // set to true in production with HTTPS
-        sameSite: "lax",
+        secure: true, // set to true in production with HTTPS
+        sameSite: "none",
       });
 
     return res.status(201).json({ message: "Signup successful",  token });
@@ -128,8 +128,8 @@ exports.handleLogout = (req, res, next) => {
   // console.log("Is Authenticated:", req.isAuthenticated());
   res.clearCookie("jwt", {
     httpOnly: true,
-    sameSite: "lax",
-    secure: false // true in production with HTTPS
+      secure: true, // set to true in production with HTTPS
+        sameSite: "none",
   });
 
   res.status(200).json({ message: "Logout successful" });
