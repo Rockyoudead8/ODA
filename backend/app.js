@@ -30,6 +30,8 @@ const GoogleStrategy = require("passport-google-oauth20").Strategy;
 const jwt_strategy = require("./config/passport");
 const {app, server} = require("./config/socket");
 
+app.set('trust proxy', 1); // Required on Render — sits behind a reverse proxy
+
 console.log("APP FILE STARTED");
 
 // cors //
