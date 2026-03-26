@@ -14,9 +14,9 @@ export default function AdminProfile({
         {/* Photo section */}
         <div className="bg-zinc-800/60 border border-zinc-700/60 rounded-2xl overflow-hidden mb-4">
           <div className="h-20 bg-gradient-to-r from-violet-900 to-pink-900/60" />
-          <div className="px-4 sm:px-6 pb-6">
-            <div className="flex flex-col sm:flex-row sm:items-end gap-3 sm:gap-5 -mt-8 sm:-mt-10 mb-5">
-              <div className="relative self-start">
+          <div className="px-6 pb-6">
+            <div className="flex items-end gap-5 -mt-10 mb-5">
+              <div className="relative">
                 <Avatar user={userData} size="xl" className="border-4 border-zinc-800 shadow-2xl" />
                 <button
                   onClick={() => fileInputRef.current?.click()}
@@ -27,9 +27,9 @@ export default function AdminProfile({
                 </button>
                 <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
               </div>
-              <div className="pb-1 min-w-0">
-                <h2 className="text-lg sm:text-xl font-bold text-zinc-100 break-words">{userData.name}</h2>
-                <p className="text-xs text-zinc-500 break-all">{userData.email}</p>
+              <div className="pb-1">
+                <h2 className="text-xl font-bold text-zinc-100">{userData.name}</h2>
+                <p className="text-xs text-zinc-500">{userData.email}</p>
                 <p className="text-xs text-zinc-500 mt-0.5">
                   Member since {new Date(userData.createdAt).toLocaleDateString("en-US", { year: "numeric", month: "long" })}
                 </p>
@@ -40,7 +40,7 @@ export default function AdminProfile({
         </div>
 
         {/* Edit form */}
-        <div className="bg-zinc-800/60 border border-zinc-700/60 rounded-2xl p-4 sm:p-6">
+        <div className="bg-zinc-800/60 border border-zinc-700/60 rounded-2xl p-6">
           <div className="flex items-center justify-between mb-5">
             <div className="flex items-center gap-2">
               <Edit3 size={15} className="text-zinc-400" />
@@ -82,7 +82,7 @@ export default function AdminProfile({
                     />
                   )
                 ) : (
-                  <p className="text-sm text-zinc-200 bg-zinc-700/30 px-3 py-2.5 rounded-xl border border-zinc-700/40 min-h-[40px] break-words">
+                  <p className="text-sm text-zinc-200 bg-zinc-700/30 px-3 py-2.5 rounded-xl border border-zinc-700/40 min-h-[40px]">
                     {readonlyVal || <span className="text-zinc-600">Not set</span>}
                   </p>
                 )}
@@ -94,7 +94,7 @@ export default function AdminProfile({
               <label className="block text-xs font-semibold text-zinc-400 mb-1.5">
                 Email <span className="text-zinc-600 font-normal">(cannot be changed)</span>
               </label>
-              <p className="text-sm text-zinc-400 bg-zinc-800/40 px-3 py-2.5 rounded-xl border border-zinc-700/30 break-all">{userData.email}</p>
+              <p className="text-sm text-zinc-400 bg-zinc-800/40 px-3 py-2.5 rounded-xl border border-zinc-700/30">{userData.email}</p>
             </div>
           </div>
 
@@ -109,16 +109,16 @@ export default function AdminProfile({
           </AnimatePresence>
 
           {isEditing && (
-            <div className="flex flex-col sm:flex-row justify-end gap-2 mt-5">
+            <div className="flex justify-end gap-2 mt-5">
               <button
                 onClick={() => { setIsEditing(false); setEditForm({ name: userData.name || "", bio: userData.bio || "", defaultCity: userData.defaultCity || "" }); setProfileMsg({ type: "", text: "" }); }}
                 disabled={profileSaving}
-                className="w-full sm:w-auto px-4 py-2 text-xs font-semibold text-zinc-300 border border-zinc-600 rounded-xl hover:bg-zinc-700 transition-colors disabled:opacity-40"
+                className="px-4 py-2 text-xs font-semibold text-zinc-300 border border-zinc-600 rounded-xl hover:bg-zinc-700 transition-colors disabled:opacity-40"
               >Cancel</button>
               <button
                 onClick={handleSaveProfile}
                 disabled={profileSaving || !editForm.name.trim()}
-                className="w-full sm:w-auto flex items-center justify-center gap-1.5 px-4 py-2 bg-violet-700 hover:bg-violet-600 text-white text-xs font-semibold rounded-xl transition-colors disabled:opacity-40"
+                className="flex items-center gap-1.5 px-4 py-2 bg-violet-700 hover:bg-violet-600 text-white text-xs font-semibold rounded-xl transition-colors disabled:opacity-40"
               >
                 {profileSaving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
                 {profileSaving ? "Saving…" : "Save Changes"}
